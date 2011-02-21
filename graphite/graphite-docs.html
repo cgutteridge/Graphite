@@ -22,8 +22,8 @@
 <dt>$graph-&gt;cacheDir( $dir, [$age] );</dt>
 <dd>$dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.</dd>
 
-<dt>print $graph-&gt;dump();</dt>
-<dd>Returns the entire RDF in memory in nicely formated HTML so you can see what's going on.</dd>
+<dt>print $graph-&gt;dump( [$options] );</dt>
+<dd>Returns the entire RDF in memory in nicely formated HTML so you can see what's going on. Options is an optional array, same parameters as $options on a dump() of an individual resource.</dd>
 
 <dt>$resource = $graph-&gt;primaryTopic();</dt>
 <dd>Utility method (shamelessly ripped off from EasyRDF). Returns the primary topic of the first URL that was loaded. Handy when working with FOAF.</dd>
@@ -74,6 +74,7 @@
 <dd>Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something. $options is an optinoal array of flags to modify how dump() renders HTML. 
 <div><strong>"label"=&gt;1</strong> - add a label for the URI, and the rdf:type, to the top of each resource box, if the infomration is in the current graph.</div>
 <div><strong>"labeluris"=&gt;1</strong> - when listing the resources to which this URI relates, show them as a label, if possible, rather than a URI. Hovering the mouse will still show the URI.</div>
+<div><strong>"internallinks"=&gt;1</strong> - instead of linking directly to the URI, link to that resource's dump on the current page (which may or may not be present). This can, for example, make bnode nests easier to figure out.</div>
 </dd>
 </dl>
 

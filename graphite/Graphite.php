@@ -755,7 +755,12 @@ class Graphite_Resource extends Graphite_Node
 		{
 			$label = $this->label();
 		}
-		return "<a href='".$this->uri."' title='".$this->uri."' style='text-decoration:none;color:red'>".$label."</a>"; 
+		$href = $this->uri;
+		if( @$options["internallinks"] )
+		{
+			$href = "#".htmlentities($this->uri);
+		}
+		return "<a href='".$href."' title='".$this->uri."' style='text-decoration:none;color:red'>".$label."</a>";
 	}
 	function dumpValueText() { return $this->g->shrinkURI( $this->uri ); }
 	function nodeType() { return "#resource"; }
