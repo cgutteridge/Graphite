@@ -17,10 +17,12 @@
 # data community!
 
 # todo:
-# hasRelationValue, hasRelation, filter, loadString
+# hasRelationValue, hasRelation, filter, loadString,
+
 
 # to document:
 # sort, getString, allString, addTurtle, addRDFXML, added sioc: and sioc:name, addTriple, link, isType
+#  allSubjects, allObjects, isNull, loadSPARQL
 
 
 class Graphite
@@ -44,6 +46,7 @@ class Graphite
 		$this->ns( "skos", "http://www.w3.org/2004/02/skos/core#" );
 		$this->ns( "geo",  "http://www.w3.org/2003/01/geo/wgs84_pos#" );
 		$this->ns( "sioc", "http://rdfs.org/sioc/ns#" );
+		$this->ns( "oo",   "http://purl.org/openorg/" );
 
 		$this->loaded = array();
 		$this->debug = false;
@@ -103,10 +106,16 @@ class Graphite
 					ini_set('user_agent', "PHP\r\nAccept: application/rdf+xml");
 					while( $ttl > 0 )
 					{
+						$ttl--;
 						# dirty hack to set the accept header without using curl
 						if( !$rdf_fp = fopen($url, 'r') ) { break; }
 						$meta_data = stream_get_meta_data($rdf_fp);
 						$redir = 0;
+						if( @!$meta_data['wrapper_data'] )
+						{
+							fclose($rdf_fp);
+							continue;
+						}
 						foreach($meta_data['wrapper_data'] as $response) 
 						{
   							if (substr(strtolower($response), 0, 10) == 'location: ') 
@@ -126,8 +135,6 @@ class Graphite
   							}
 						}
 						if( !$redir ) { break; }
-						$ttl--;
-						fclose($rdf_fp);
 					}
 					ini_set('user_agent', $old_user_agent);
 					if( $ttl > 0 && $mime == "application/rdf+xml" && $rdf_fp )
@@ -144,7 +151,7 @@ class Graphite
 						}
 						fclose($cache_fp);
 					}
-					fclose($rdf_fp);
+					@fclose($rdf_fp);
 				}
 	
 			}
@@ -179,6 +186,11 @@ class Graphite
 		}
 		$this->loaded[$uri] = $this->addTriples( $parser->getTriples(), $aliases, $map );
 		return $this->loaded[$uri];
+	}
+
+	function loadSPARQL( $endpoint, $query ) 
+	{
+		return $this->load( $endpoint."?query=".urlencode($query) );
 	}
 
 	function addTurtle( $base, $data )
@@ -324,7 +336,7 @@ class Graphite
 		return $uri;
 	}
 
-	# document in next release!
+
 	public function allSubjects()
 	{
 		$r = new Graphite_ResourceList( $this );
@@ -334,7 +346,7 @@ class Graphite
 		}
 		return $r;
 	}
-	# document in next release!
+
 	public function allObjects()
 	{
 		$r = new Graphite_ResourceList( $this );
@@ -369,6 +381,7 @@ class Graphite_Node
 	{
 		$this->g = $g;
 	}
+	function isNull() { return false; }
 	function has() { return false; }
 	function get() { return new Graphite_Null($this->g); }
 	function type() { return new Graphite_Null($this->g); }
@@ -413,6 +426,7 @@ class Graphite_Node
 class Graphite_Null extends Graphite_Node
 {
 	function nodeType() { return "#null"; }
+	function isNull() { return true; }
 }
 class Graphite_Literal extends Graphite_Node
 {
@@ -707,7 +721,7 @@ class Graphite_Resource extends Graphite_Node
 			$this->g->forceString( $prop );
 			$plist []= sprintf( $pattern, $prop, $prop, $this->g->shrinkURI($prop), join( ", ",$olist ));
 		}
-		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
+		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='text-align:left;font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
 		if( isset($options["label"] ) )
 		{
 			$label = $this->label();
@@ -720,7 +734,7 @@ class Graphite_Resource extends Graphite_Node
 				}
 				else		
 				{
-					$bits = preg_split( "/[\/#]/", $this->get( "rdf:type" )->uri );
+					$bits = preg_split( "/[\/#]/", @$this->get( "rdf:type" )->uri );
 					$typename = array_pop( $bits );
 					$typename = preg_replace( "/([a-z])([A-Z])/","$1 $2",$typename );
 				}
