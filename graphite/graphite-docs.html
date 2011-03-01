@@ -78,6 +78,10 @@
 <dt>$resources_list = $resource-&gt;types()</dt>
 <dd>Handy methods for getting the rdf:type or types of the resource. Use for code readability.</dd>
 
+<dt>$boolean = $resource-&gt;isType( $type );</dt>
+<dt>$boolean = $resource-&gt;isType( <a href='#resources'>*resource list*</a> );</dt>
+<dd>Return true if the resource is of the given type, or any of the given list of types.</dd>
+
 <dt>$label = $resource-&gt;label()</dt>
 <dd>Get a valid label for this resource, tries all of skos:prefLabel, rdfs:label, foaf:name, dct:title, dc:title, sioc:name.</dd>
 

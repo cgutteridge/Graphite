@@ -22,7 +22,7 @@
 
 # to document:
 # added sioc: (needs to be documented in the parent of graphite-docs.html),
-# addTriples, addTriple, isType, allSubjects, allObjects, isNull,
+# addTriples, addTriple, allSubjects, allObjects, isNull,
 # loadSPARQL
 
 
