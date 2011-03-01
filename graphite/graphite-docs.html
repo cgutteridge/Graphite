@@ -37,6 +37,12 @@
 <dt>$resources = $graph-&gt;allOfType( $type_uri );</dt>
 <dd>Return a list of all resources loaded, with the rdf:type given. eg. $graph-&gt;allOfType( "foaf:Person" )</dd>
 
+<dt>$resources = $graph-&gt;allSubjects();</dt>
+<dd>Return a list of all resources in the graph which are the subject of at least one triple.</dd>
+
+<dt>$resources = $graph-&gt;allObjects();</dt>
+<dd>Return a list of all resources in the graph which are the object of at least one triple.</dd>
+
 </dl>
 </dl>
 </div>
