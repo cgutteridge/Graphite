@@ -16,6 +16,12 @@
 <dt>$count = $graph-&gt;load( $uri_to_load );</dt>
 <dd>Load the RDF from the given URI or URL. Return the number of triples loaded.</dd>
 
+<dt>$count = $graph-&gt;addTurtle( $base, $data );</dt>
+<dd>Take a base URI and a string of turtle RDF and load the new triples into the graph. Return the number of triples loaded.</dd>
+
+<dt>$count = $graph-&gt;addRDFXML( $base, $data );</dt>
+<dd>As for addTurtle but load a string of RDF XML.</dd>
+
 <dt>$resource = $graph-&gt;resource( $uri );</dt>
 <dd>Get the resource with given URI. $uri may be abbreviated to "namespace:value".</dd>
 

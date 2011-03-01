@@ -21,7 +21,7 @@
 
 
 # to document:
-# addTurtle, addRDFXML, added sioc: and sioc:name, addTriple, link, isType
+# added sioc: and sioc:name, addTriple, link, isType
 #  allSubjects, allObjects, isNull, loadSPARQL
 
 
