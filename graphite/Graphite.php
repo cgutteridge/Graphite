@@ -21,8 +21,9 @@
 
 
 # to document:
-# added sioc:, addTriple, link, isType
-#  allSubjects, allObjects, isNull, loadSPARQL
+# added sioc: (needs to be documented in the parent of graphite-docs.html),
+# addTriples, addTriple, link, isType, allSubjects, allObjects, isNull,
+# loadSPARQL
 
 
 class Graphite
