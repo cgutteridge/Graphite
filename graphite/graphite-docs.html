@@ -43,6 +43,10 @@
 <dt>$new_resource = $resource-&gt;get( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Get a single resource, related to the current resource by the given property. The property may be a URI or "namespace:value". It may be a literal or a normal resource. If there's no value, it returns a null resource object (not a null value), so your code will muddle through. If you specify multiple properties, then this returns the first resource it finds. To get a value from the inverse of a relationship, prefix the property string with "-". For example, to get the mayor of a city you may need to do $city-&gt;get( "-somens:isMayorOf" );</dd>
 
+<dt>$string = $resource-&gt;getString( $property );</dt>
+<dt>$string = $resource-&gt;getString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>As for get() but return the result's string value.</dd>
+
 <dt>$boolean = $resource-&gt;has( $property );</dt>
 <dt>$boolean = $resource-&gt;has( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Returns true if there this resource has at least one relationship with the given properties (or with any of the given properties)</dd>
@@ -50,6 +54,10 @@
 <dt>$resource_list = $resource-&gt;all( $property );</dt>
 <dt>$resource_list = $resource-&gt;all( <a href='#resources'>*resource list*</a> );</dt>
 <dd>As for get(), but returns a resource list of zero or more matching resources. Resource lists may be treated as arrays, but see below for additional properties.</dd>
+
+<dt>$resource_list = $resource-&gt;allString( $property );</dt>
+<dt>$resource_list = $resource-&gt;allString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>As for all(), but returns a resource list the string values of each result.</dd>
 
 <dt>$relation_list = $resource-&gt;relations();</dt>
 <dd>Returns an resource list of the properties relating to this resource, including inverse ones.</dd>
@@ -102,9 +110,17 @@
 <dt>$new_resourcelist = $resourcelist-&gt;get( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Call $resource-&gt;get(...) on every item in this list and return a resourcelist of the results.</dd>
 
+<dt>$string = $resource-&gt;getString( $property );</dt>
+<dt>$string = $resource-&gt;getString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>Call $resource-&gt;getString(...) on every item in this list and return a resourcelist of the results.</dd>
+
 <dt>$new_resourcelist = $resourcelist-&gt;all( $property );</dt>
 <dt>$new_resourcelist = $resourcelist-&gt;all( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Call $resource-&gt;all(...) on every item in this list and return a resourcelist of all the results. Duplicate resources are eliminated.</dd>
+
+<dt>$resource_list = $resource-&gt;allString( $property );</dt>
+<dt>$resource_list = $resource-&gt;allString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>Call $resource-&gt;allString(...) on every item in this list and return a resourcelist of all the results. As with all(), duplicate resources and eliminated.</dd>
 
 <dt>$new_resourcelist = $resourcelist-&gt;label();</dt>
 <dd>Call $resource-&gt;label() on every item in this list and return a resourcelist of the results.</dd>

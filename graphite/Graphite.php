@@ -21,7 +21,7 @@
 
 
 # to document:
-# getString, allString, addTurtle, addRDFXML, added sioc: and sioc:name, addTriple, link, isType
+# addTurtle, addRDFXML, added sioc: and sioc:name, addTriple, link, isType
 #  allSubjects, allObjects, isNull, loadSPARQL
 
 
