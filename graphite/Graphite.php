@@ -203,7 +203,7 @@ class Graphite
 		{
 			if( $this->debug )
 			{
-				print "<h3>Error loading: $uri</h3>";
+				print "<h3>Error loading turtle string</h3>";
 				print "<ul><li>".join( "</li><li>",$errors)."</li></ul>";
 			}
 			return 0;
@@ -220,7 +220,7 @@ class Graphite
 		{
 			if( $this->debug )
 			{
-				print "<h3>Error loading: $uri</h3>";
+				print "<h3>Error loading RDFXML string</h3>";
 				print "<ul><li>".join( "</li><li>",$errors)."</li></ul>";
 			}
 			return 0;
