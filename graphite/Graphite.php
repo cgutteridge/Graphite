@@ -21,7 +21,7 @@
 
 
 # to document:
-# added sioc: and sioc:name, addTriple, link, isType
+# added sioc:, addTriple, link, isType
 #  allSubjects, allObjects, isNull, loadSPARQL
 
 
