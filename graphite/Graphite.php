@@ -271,6 +271,82 @@ class Graphite
 		$this->t["op"][$o][$p][] = $s;
 	}
 
+	function toArcTriples()
+	{
+		$arcTriples = array();
+		foreach( $this->t["sp"] as $s => $p_os )
+		{
+			$s = $this->expandURI( $s );
+			$s_type = "uri";
+			if( preg_match( '/^_:/', $s ) )
+			{
+				$s_type = "bnode";
+			}
+
+			foreach( $p_os as $p => $os )
+			{
+				$p = $this->expandURI( $p );
+				$p_type = "uri";
+				if( preg_match( '/^_:/', $p ) )
+				{
+					$p_type = "bnode";
+				}
+
+				foreach( $os as $o )
+				{
+					$o_lang = null;
+					$o_datatype = null;
+					if( is_array( $o ))
+					{
+						$o_type = "literal";
+						if( isset( $o["l"] ) && $o["l"] )
+						{
+							$o_lang = $o["l"];
+						}
+						if( isset( $o["d"] ) )
+						{
+							$o_datatype = $this->expandURI( $o["d"] );
+						}
+						$o = $o["v"];
+					}
+					else
+					{
+						$o = $this->expandURI( $o );
+						$o_type = "uri";
+						if( preg_match( '/^_:/', $o ) )
+						{
+							$o_type = "bnode";
+						}
+					}
+					$triple = array(
+						"s" => $s,
+						"s_type" => $s_type,
+						"p" => $p,
+						"p_type" => $p_type,
+						"o" => $o,
+						"o_type" => $o_type,
+					);
+					if( !is_null( $o_datatype ) )
+					{
+						$triple["o_datatype"] = $o_datatype;
+					}
+					if( !is_null( $o_lang ) )
+					{
+						$triple["o_lang"] = $o_lang;
+					}
+					$arcTriples[] = $triple;
+				}
+			}
+		}
+		return $arcTriples;
+	}
+
+	public function serialize( $type = "RDFXML" )
+	{
+		$serializer = ARC2::getSer( $type, array( "ns" => $this->ns ) );
+		return $serializer->getSerializedTriples( $this->toArcTriples() );
+	}
+
 	public function cleanURI( $uri ) 
 	{
 		if( !$uri ) { return; }
