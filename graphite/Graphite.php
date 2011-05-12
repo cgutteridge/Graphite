@@ -1100,6 +1100,19 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return $list;
 	}
+
+	function allOfType( $uri )
+	{
+		$list = new Graphite_ResourceList( $this->g, array() );
+		foreach( $this as $item )
+		{
+			if( $item->isType( $uri ) )
+			{
+				$list [] = $item;
+			}
+		}
+		return $list;
+	}
 }
 
 function graphite_sort_list_cmp( $a, $b )
