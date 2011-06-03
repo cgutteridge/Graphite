@@ -57,6 +57,8 @@ class Graphite
 			$this->forceString( $uri );
 			$this->load( $uri );
 		}
+
+		$this->bnodeprefix = 0;
 	}
 
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
@@ -228,15 +230,21 @@ class Graphite
 		return $this->addTriples( $parser->getTriples() );
 	}
 
+	function addBnodePrefix( $uri ) {
+		return preg_replace( "/^_:/", "_:" . $this->bnodeprefix . "-", $uri );
+	}
+
 	function addTriples( $triples, $aliases = array(), $map = array() )
 	{
+		$this->bnodeprefix++;
+
 		foreach( $triples as $t )
 		{
-			$t["s"] = $this->cleanURI($t["s"]);
+			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
 			$t["p"] = $this->cleanURI($t["p"]);
 			if( $t["p"] != "http://www.w3.org/2002/07/owl#sameAs" ) { continue; }
-			$aliases[$t["o"]] = $t["s"];
+			$aliases[$this->addBnodePrefix( $t["o"] )] = $t["s"];
 		}
 		foreach( $triples as $t )
 		{
@@ -249,8 +257,11 @@ class Graphite
 
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
-		$s = $this->cleanURI( $s );
-		$p = $this->cleanURI( $p );
+		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
+		if( $o_datatype != "literal" )
+		{
+			$o = $this->addBnodePrefix( $this->cleanURI( $o ) );
+		}
 
 		if( isset($aliases[$s]) ) { $s=$aliases[$s]; }
 		if( isset($aliases[$p]) ) { $p=$aliases[$p]; }
