@@ -31,7 +31,7 @@
 <dt>print $graph-&gt;dump( [$options] );</dt>
 <dd>Returns the entire RDF in memory in nicely formatted HTML so you can see what's going on. Options is an optional array, same parameters as $options on a dump() of an individual resource.</dd>
 
-<dt>print_r $graph-&gt;toArcTriples();</dt>
+<dt>print_r( $graph-&gt;toArcTriples() );</dt>
 <dd>Returns the entire RDF in memory in Arc2's internal triples format.</dd>
 
 <dt>print $graph-&gt;serialize( [$serializer="RDFXML"] );</dt>
@@ -109,6 +109,13 @@
 <div><strong>"labeluris"=&gt;1</strong> - when listing the resources to which this URI relates, show them as a label, if possible, rather than a URI. Hovering the mouse will still show the URI.</div>
 <div><strong>"internallinks"=&gt;1</strong> - instead of linking directly to the URI, link to that resource's dump on the current page (which may or may not be present). This can, for example, make bnode nests easier to figure out.</div>
 </dd>
+
+<dt>print_r( $graph-&gt;toArcTriples() );</dt>
+<dd>Returns all triples of which this resource is the subject in Arc2's internal triples format.</dd>
+
+<dt>print $graph-&gt;serialize( [$serializer="RDFXML"] );</dt>
+<dd>Returns the serialization of the resource including any bnodes it points to (and any those point to). See the serialize method of the Graphite class above.</dd>
+
 </dl>
 
 <hr />
