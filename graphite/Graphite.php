@@ -688,14 +688,9 @@ class Graphite_Resource extends Graphite_Node
 					"o" => $o,
 					"o_type" => $o_type,
 				);
-				if( !is_null( $o_datatype ) )
-				{
-					$triple["o_datatype"] = $o_datatype;
-				}
-				if( !is_null( $o_lang ) )
-				{
-					$triple["o_lang"] = $o_lang;
-				}
+				$triple["o_datatype"] = $o_datatype;
+				$triple["o_lang"] = $o_lang;
+
 				$arcTriples[] = $triple;
 			}
 		}
