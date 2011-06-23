@@ -79,6 +79,20 @@ class Graphite
 
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
 
+	function removeFragment( $uri )
+	{
+		return preg_replace( "/#.*/", "", $uri );
+	}
+
+	function loaded( $uri )
+	{
+		if( !array_key_exists( $this->removeFragment( $uri ), $this->loaded ) )
+		{
+			return false;
+		}
+		return $this->loaded[$this->removeFragment( $uri )];
+	}
+
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
 		$this->forceString( $uri );
@@ -92,10 +106,10 @@ class Graphite
 		}
 		else
 		{
-			if( isset($this->loaded[$uri]) ) { return $this->loaded[$uri]; }
+			if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
 			if( isset($this->cacheDir) )
 			{
-				$filename = $this->cacheDir."/".md5($uri);
+				$filename = $this->cacheDir."/".md5( $this->removeFragment( $uri ) );
 
 				if( !file_exists( $filename ) || filemtime($filename)+$this->cacheAge < time() )
 				{
@@ -186,8 +200,8 @@ class Graphite
 			}
 			return 0;
 		}
-		$this->loaded[$uri] = $this->addTriples( $parser->getTriples(), $aliases, $map );
-		return $this->loaded[$uri];
+		$this->loaded[$this->removeFragment( $uri )] = $this->addTriples( $parser->getTriples(), $aliases, $map );
+		return $this->loaded( $uri );
 	}
 
 	function loadSPARQL( $endpoint, $query )
