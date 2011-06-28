@@ -245,7 +245,7 @@ class Graphite
 	}
 
 	function addBnodePrefix( $uri ) {
-		return preg_replace( "/^_:/", "_:" . $this->bnodeprefix . "-", $uri );
+		return preg_replace( "/^_:/", "_:g" . $this->bnodeprefix . "-", $uri );
 	}
 
 	function addTriples( $triples, $aliases = array(), $map = array() )
