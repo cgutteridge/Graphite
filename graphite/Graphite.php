@@ -174,7 +174,7 @@ class Graphite
 			if( isset( $filename ) &&  file_exists( $filename ) )
 			{
 				$parser = ARC2::getRDFXMLParser();
-				$parser->parse( $filename );
+				$parser->parse( $filename, file_get_contents($filename) );
 			}
 			else
 			{
