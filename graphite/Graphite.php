@@ -1,5 +1,6 @@
 <?php
 # (c)2010 Christopher Gutteridge / University of Southampton
+# some extra features and bugfixes by Bart Nagel
 # License: LGPL
 # Version 1.4
 
