@@ -181,8 +181,8 @@
 <dt>$new_resourcelist = $resourcelist-&gt;union( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Create a new resource list with the given resource or list of resources merged with the current list. Functionally the same as calling $resourcelist-&gt;append( ... )-&gt;distinct()</dd>
 
-<dt>$new_resourcelist = $resourcelist-&gt;intersect( $resource );</dt>
-<dt>$new_resourcelist = $resourcelist-&gt;intersect( <a href='#resources'>*resource list*</a> );</dt>
+<dt>$new_resourcelist = $resourcelist-&gt;intersection( $resource );</dt>
+<dt>$new_resourcelist = $resourcelist-&gt;intersection( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Create a new resource list with containing only the resources which are in both lists. Only returns one instance of each resource no matter how many duplicates were in either list.</dd>
 
 <dt>$new_resourcelist = $resourcelist-&gt;except( $resource );</dt>
