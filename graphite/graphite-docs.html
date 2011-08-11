@@ -16,20 +16,38 @@
 <dt>$count = $graph-&gt;load( $uri_to_load );</dt>
 <dd>Load the RDF from the given URI or URL. Return the number of triples loaded.</dd>
 
+<dt>$count = $graph-&gt;addTurtle( $base, $data );</dt>
+<dd>Take a base URI and a string of turtle RDF and load the new triples into the graph. Return the number of triples loaded.</dd>
+
+<dt>$count = $graph-&gt;addRDFXML( $base, $data );</dt>
+<dd>As for addTurtle but load a string of RDF XML.</dd>
+
 <dt>$resource = $graph-&gt;resource( $uri );</dt>
-<dd>Get the resource with given uri. $uri may be abbreviated to "namespace:value".</dd>
+<dd>Get the resource with given URI. $uri may be abbreviated to "namespace:value".</dd>
 
 <dt>$graph-&gt;cacheDir( $dir, [$age] );</dt>
 <dd>$dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.</dd>
 
-<dt>print $graph-&gt;dump();</dt>
-<dd>Returns the entire RDF in memory in nicely formated HTML so you can see what's going on.</dd>
+<dt>print $graph-&gt;dump( [$options] );</dt>
+<dd>Returns the entire RDF in memory in nicely formatted HTML so you can see what's going on. Options is an optional array, same parameters as $options on a dump() of an individual resource.</dd>
+
+<dt>print_r( $graph-&gt;toArcTriples() );</dt>
+<dd>Returns the entire RDF in memory in Arc2's internal triples format.</dd>
+
+<dt>print $graph-&gt;serialize( [$serializer="RDFXML"] );</dt>
+<dd>Returns the serialization of the entire RDF graph in memory using one of Arc2's serializers. By default the RDF/XML serializer is used, but others (try passing "Turtle" or "NTriples") can be used - see the Arc2 documentation.</dd>
 
 <dt>$resource = $graph-&gt;primaryTopic();</dt>
 <dd>Utility method (shamelessly ripped off from EasyRDF). Returns the primary topic of the first URL that was loaded. Handy when working with FOAF.</dd>
 
 <dt>$resources = $graph-&gt;allOfType( $type_uri );</dt>
 <dd>Return a list of all resources loaded, with the rdf:type given. eg. $graph-&gt;allOfType( "foaf:Person" )</dd>
+
+<dt>$resources = $graph-&gt;allSubjects();</dt>
+<dd>Return a list of all resources in the graph which are the subject of at least one triple.</dd>
+
+<dt>$resources = $graph-&gt;allObjects();</dt>
+<dd>Return a list of all resources in the graph which are the object of at least one triple.</dd>
 
 </dl>
 </dl>
@@ -43,16 +61,24 @@
 <dt>$new_resource = $resource-&gt;get( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Get a single resource, related to the current resource by the given property. The property may be a URI or "namespace:value". It may be a literal or a normal resource. If there's no value, it returns a null resource object (not a null value), so your code will muddle through. If you specify multiple properties, then this returns the first resource it finds. To get a value from the inverse of a relationship, prefix the property string with "-". For example, to get the mayor of a city you may need to do $city-&gt;get( "-somens:isMayorOf" );</dd>
 
+<dt>$string = $resource-&gt;getString( $property );</dt>
+<dt>$string = $resource-&gt;getString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>As for get() but return the result's string value.</dd>
+
 <dt>$boolean = $resource-&gt;has( $property );</dt>
 <dt>$boolean = $resource-&gt;has( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Returns true if there this resource has at least one relationship with the given properties (or with any of the given properties)</dd>
 
 <dt>$resource_list = $resource-&gt;all( $property );</dt>
 <dt>$resource_list = $resource-&gt;all( <a href='#resources'>*resource list*</a> );</dt>
-<dd>As for get(), but returns an resource list of zero or more matching resources. Resource lists may be treated as arrays, but see below for additional properties.</dd>
+<dd>As for get(), but returns a resource list of zero or more matching resources. Resource lists may be treated as arrays, but see below for additional properties.</dd>
+
+<dt>$resource_list = $resource-&gt;allString( $property );</dt>
+<dt>$resource_list = $resource-&gt;allString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>As for all(), but returns a resource list the string values of each result.</dd>
 
 <dt>$relation_list = $resource-&gt;relations();</dt>
-<dd>Returns an resource list of the properties relating to this resource, including inverse ones.</dd>
+<dd>Returns a resource list of the properties relating to this resource, including inverse ones.</dd>
 
 <dt>$count = $resource-&gt;load();</dt>
 <dd>Try and resolve this resource via the web and load the RDF found there into the current Graphite object. Returns the number of triples loaded (zero probably indicates failure).</dd>
@@ -64,25 +90,40 @@
 <dt>$resources_list = $resource-&gt;types()</dt>
 <dd>Handy methods for getting the rdf:type or types of the resource. Use for code readability.</dd>
 
+<dt>$boolean = $resource-&gt;isType( $type );</dt>
+<dt>$boolean = $resource-&gt;isType( <a href='#resources'>*resource list*</a> );</dt>
+<dd>Return true if the resource is of the given type, or any of the given list of types.</dd>
+
+<dt>$boolean = $resource-&gt;isNull();</dt>
+<dd>Return true if the resource is a null node, e.g. as the result of $resource-&gt;get("something:nonexistent").</dd>
+
 <dt>$label = $resource-&gt;label()</dt>
-<dd>Get a valid label for this resource, tries all of skos:prefLabel, rdfs:label, foaf:name, dc:title, dct:title.</dd>
+<dd>Get a valid label for this resource, tries all of skos:prefLabel, rdfs:label, foaf:name, dct:title, dc:title, sioc:name.</dd>
 
 <dt>$htmllink = $resource-&gt;link()</dt>
 <dd>Returns &lt;a href='THIS'&gt;THIS&lt;/a&gt; -  saves time when wanting to link homepages, etc.</dd>
 
 <dt>$dump = $resource-&gt;dump( [$options] );<dt>
-<dd>Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something. $options is an optinoal array of flags to modify how dump() renders HTML. 
-<div><strong>"label"=&gt;1</strong> - add a label for the URI, and the rdf:type, to the top of each resource box, if the infomration is in the current graph.</div>
+<dd>Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something. $options is an optional array of flags to modify how dump() renders HTML. 
+<div><strong>"label"=&gt;1</strong> - add a label for the URI, and the rdf:type, to the top of each resource box, if the information is in the current graph.</div>
 <div><strong>"labeluris"=&gt;1</strong> - when listing the resources to which this URI relates, show them as a label, if possible, rather than a URI. Hovering the mouse will still show the URI.</div>
+<div><strong>"internallinks"=&gt;1</strong> - instead of linking directly to the URI, link to that resource's dump on the current page (which may or may not be present). This can, for example, make bnode nests easier to figure out.</div>
 </dd>
+
+<dt>print_r( $graph-&gt;toArcTriples() );</dt>
+<dd>Returns all triples of which this resource is the subject in Arc2's internal triples format.</dd>
+
+<dt>print $graph-&gt;serialize( [$serializer="RDFXML"] );</dt>
+<dd>Returns the serialization of the resource including any bnodes it points to (and any those point to). See the serialize method of the Graphite class above.</dd>
+
 </dl>
 
 <hr />
-<h4>Experiemental Resource Class methods</h4>
+<h4>Experimental Resource Class methods</h4>
 <p>These do some funky stuff relating to our research at Southampton. They may be modified or removed in later versions of Graphite.</p>
 <dl class="function_list">
 <dt>$count = $resource-&gt;loadSameAsOrg( $prefix );</dt>
-<dd>Look up this URI in <a href="http://sameas.org/">http://sameas.org</a> and follow any sameAs URIs from there which match the prefix. $prefix is enforced as sameAs.org may return 100's of URIs.</dd>
+<dd>Look up this URI in <a href="http://sameas.org/">http://sameas.org</a> and follow any sameAs URIs from there which match the prefix. $prefix is enforced as sameAs.org may return hundreds of URIs.</dd>
 
 <dt>$count = $resource-&gt;loadDataGovUKBackLinks()</dt>
 <dd>Takes the current resource and attempts to find backlinks via <a href='http://backlinks.psi.enakting.org/'>The EnAKTing project</a>. This works rather nicely with dbpedia URIs of British regions, cities etc.</dd>
@@ -101,9 +142,20 @@
 <dt>$new_resourcelist = $resourcelist-&gt;get( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Call $resource-&gt;get(...) on every item in this list and return a resourcelist of the results.</dd>
 
+<dt>$string = $resource-&gt;getString( $property );</dt>
+<dt>$string = $resource-&gt;getString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>Call $resource-&gt;getString(...) on every item in this list and return a resourcelist of the results.</dd>
+
 <dt>$new_resourcelist = $resourcelist-&gt;all( $property );</dt>
 <dt>$new_resourcelist = $resourcelist-&gt;all( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Call $resource-&gt;all(...) on every item in this list and return a resourcelist of all the results. Duplicate resources are eliminated.</dd>
+
+<dt>$resource_list = $resource-&gt;allString( $property );</dt>
+<dt>$resource_list = $resource-&gt;allString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>Call $resource-&gt;allString(...) on every item in this list and return a resourcelist of all the results. As with all(), duplicate resources and eliminated.</dd>
+
+<dt>$resource_list = $resource-&gt;allOfType( $type_uri );</dt>
+<dd>Create a new resource list containing all resources in the current list of the given type.</dd>
 
 <dt>$new_resourcelist = $resourcelist-&gt;label();</dt>
 <dd>Call $resource-&gt;label() on every item in this list and return a resourcelist of the results.</dd>
@@ -114,9 +166,9 @@
 <dt>$str = $resourcelist-&gt;join( $joinstr );</dt>
 <dd>Returns a string of all the items in the resource list, joined with the given string.</dd>
 
-<dt>$new_resourcelist = $resourcelist-&gt;sort( $propety );</dt>
+<dt>$new_resourcelist = $resourcelist-&gt;sort( $property );</dt>
 <dt>$new_resourcelist = $resourcelist-&gt;sort( <a href='#resources'>*resource list*</a> );</dt>
-<dd>Return this resource list sorted by the given property or properties. If a resource has multiple values for a property then one will be used, as with $resource-&gt;get().</dd>
+<dd>Return a copy of this resource list sorted by the given property or properties. If a resource has multiple values for a property then one will be used, as with $resource-&gt;get().</dd>
 
 <dt>$new_resourcelist = $resourcelist-&gt;distinct();</dt>
 <dd>Return a list with any duplicates removed, otherwise preserving current order.</dd>
@@ -129,8 +181,8 @@
 <dt>$new_resourcelist = $resourcelist-&gt;union( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Create a new resource list with the given resource or list of resources merged with the current list. Functionally the same as calling $resourcelist-&gt;append( ... )-&gt;distinct()</dd>
 
-<dt>$new_resourcelist = $resourcelist-&gt;intersect( $resource );</dt>
-<dt>$new_resourcelist = $resourcelist-&gt;intersect( <a href='#resources'>*resource list*</a> );</dt>
+<dt>$new_resourcelist = $resourcelist-&gt;intersection( $resource );</dt>
+<dt>$new_resourcelist = $resourcelist-&gt;intersection( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Create a new resource list with containing only the resources which are in both lists. Only returns one instance of each resource no matter how many duplicates were in either list.</dd>
 
 <dt>$new_resourcelist = $resourcelist-&gt;except( $resource );</dt>

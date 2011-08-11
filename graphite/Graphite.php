@@ -1,5 +1,6 @@
 <?php
 # (c)2010 Christopher Gutteridge / University of Southampton
+# some extra features and bugfixes by Bart Nagel
 # License: LGPL
 # Version 1.4
 
@@ -13,7 +14,7 @@
 #  SimpleGraph - http://code.google.com/p/moriarty/wiki/SimpleGraph
 #
 # I've used function calls in common with EasyRDF, where it makes sense
-# to do so. Easy RDF now uses our dump() style. We're one big happy linked 
+# to do so. Easy RDF now uses our dump() style. We're one big happy linked
 # data community!
 
 # todo:
@@ -21,8 +22,8 @@
 
 
 # to document:
-# sort, getString, allString, addTurtle, addRDFXML, added sioc: and sioc:name, addTriple, link, isType
-#  allSubjects, allObjects, isNull, loadSPARQL
+# added sioc: (needs to be documented in the parent of graphite-docs.html),
+# addTriples, addTriple, loadSPARQL
 
 
 class Graphite
@@ -34,8 +35,8 @@ class Graphite
 		{
 			$this->ns( $short, $long );
 		}
-	     	$this->ns( "foaf", "http://xmlns.com/foaf/0.1/" );
-	       	$this->ns( "dc",   "http://purl.org/dc/elements/1.1/" );
+		$this->ns( "foaf", "http://xmlns.com/foaf/0.1/" );
+		$this->ns( "dc",   "http://purl.org/dc/elements/1.1/" );
 		$this->ns( "dct",  "http://purl.org/dc/terms/" );
 		$this->ns( "rdf",  "http://www.w3.org/1999/02/22-rdf-syntax-ns#" );
 		$this->ns( "rdfs", "http://www.w3.org/2000/01/rdf-schema#" );
@@ -52,20 +53,22 @@ class Graphite
 		$this->debug = false;
 
 		$this->firstGraphURI = null;
-		if( $uri ) 
-		{ 
+		if( $uri )
+		{
 			$this->forceString( $uri );
-			$this->load( $uri ); 
+			$this->load( $uri );
 		}
+
+		$this->bnodeprefix = 0;
 	}
 
-	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours 
+	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
 	{
 		$error = "";
 		if( !file_exists( $dir ) ) { $error = "No such directory: $dir"; }
 		elseif( !is_dir( $dir ) ) { $error = "Not a directory: $dir"; }
 		elseif( !is_writable( $dir ) ) { $error = "Not writable: $dir"; }
-		if( $error ) { 
+		if( $error ) {
 			print "<ul><li>Graphite cacheDir error: $error</li></ul>";
 		}
 		else
@@ -76,6 +79,20 @@ class Graphite
 	}
 
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
+
+	function removeFragment( $uri )
+	{
+		return preg_replace( "/#.*/", "", $uri );
+	}
+
+	function loaded( $uri )
+	{
+		if( !array_key_exists( $this->removeFragment( $uri ), $this->loaded ) )
+		{
+			return false;
+		}
+		return $this->loaded[$this->removeFragment( $uri )];
+	}
 
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
@@ -90,10 +107,10 @@ class Graphite
 		}
 		else
 		{
-			if( isset($this->loaded[$uri]) ) { return $this->loaded[$uri]; }
+			if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
 			if( isset($this->cacheDir) )
 			{
-				$filename = $this->cacheDir."/".md5($uri);
+				$filename = $this->cacheDir."/".md5( $this->removeFragment( $uri ) );
 
 				if( !file_exists( $filename ) || filemtime($filename)+$this->cacheAge < time() )
 				{
@@ -116,23 +133,23 @@ class Graphite
 							fclose($rdf_fp);
 							continue;
 						}
-						foreach($meta_data['wrapper_data'] as $response) 
+						foreach($meta_data['wrapper_data'] as $response)
 						{
-  							if (substr(strtolower($response), 0, 10) == 'location: ') 
+							if (substr(strtolower($response), 0, 10) == 'location: ')
 							{
 								$newurl = substr($response, 10);
 								if( substr( $newurl, 0, 1 ) == "/" )
-								{		
+								{
 									$parts = preg_split( "/\//",$url );
 									$newurl = $parts[0]."//".$parts[2].$newurl;
 								}
 								$url = $newurl;
 								$redir = 1;
-  							}
-  							if (substr(strtolower($response), 0, 14) == 'content-type: ') 
+							}
+							if (substr(strtolower($response), 0, 14) == 'content-type: ')
 							{
-    								$mime = preg_replace( "/\s*;.*$/","", substr($response, 14));
-  							}
+								$mime = preg_replace( "/\s*;.*$/","", substr($response, 14));
+							}
 						}
 						if( !$redir ) { break; }
 					}
@@ -140,31 +157,31 @@ class Graphite
 					if( $ttl > 0 && $mime == "application/rdf+xml" && $rdf_fp )
 					{
 						# candidate for caching!
-						if (!$cache_fp = fopen($filename, 'w')) 
+						if (!$cache_fp = fopen($filename, 'w'))
 						{
-	 						echo "Cannot write file ($filename)";
-	 						exit;
+							echo "Cannot write file ($filename)";
+							exit;
 						}
-				 		
+
 						while (!feof($rdf_fp)) {
-  							fwrite( $cache_fp, fread($rdf_fp, 8192) );
+							fwrite( $cache_fp, fread($rdf_fp, 8192) );
 						}
 						fclose($cache_fp);
 					}
 					@fclose($rdf_fp);
 				}
-	
+
 			}
 			if( isset( $filename ) &&  file_exists( $filename ) )
 			{
 				$parser = ARC2::getRDFXMLParser();
-				$parser->parse( $filename );
+				$parser->parse( $uri, file_get_contents($filename) );
 			}
 			else
-			{		
+			{
 				$parser = ARC2::getRDFParser();
 				# Don't try to load the same URI twice!
-		
+
 				if( !isset( $this->firstGraphURI ) )
 				{
 					$this->firstGraphURI = $uri;
@@ -175,7 +192,7 @@ class Graphite
 
 		$errors = $parser->getErrors();
 		$parser->resetErrors();
-		if( sizeof($errors) ) 
+		if( sizeof($errors) )
 		{
 			if( $this->debug )
 			{
@@ -184,11 +201,11 @@ class Graphite
 			}
 			return 0;
 		}
-		$this->loaded[$uri] = $this->addTriples( $parser->getTriples(), $aliases, $map );
-		return $this->loaded[$uri];
+		$this->loaded[$this->removeFragment( $uri )] = $this->addTriples( $parser->getTriples(), $aliases, $map );
+		return $this->loaded( $uri );
 	}
 
-	function loadSPARQL( $endpoint, $query ) 
+	function loadSPARQL( $endpoint, $query )
 	{
 		return $this->load( $endpoint."?query=".urlencode($query) );
 	}
@@ -203,7 +220,7 @@ class Graphite
 		{
 			if( $this->debug )
 			{
-				print "<h3>Error loading: $uri</h3>";
+				print "<h3>Error loading turtle string</h3>";
 				print "<ul><li>".join( "</li><li>",$errors)."</li></ul>";
 			}
 			return 0;
@@ -220,7 +237,7 @@ class Graphite
 		{
 			if( $this->debug )
 			{
-				print "<h3>Error loading: $uri</h3>";
+				print "<h3>Error loading RDFXML string</h3>";
 				print "<ul><li>".join( "</li><li>",$errors)."</li></ul>";
 			}
 			return 0;
@@ -228,37 +245,46 @@ class Graphite
 		return $this->addTriples( $parser->getTriples() );
 	}
 
+	function addBnodePrefix( $uri ) {
+		return preg_replace( "/^_:/", "_:g" . $this->bnodeprefix . "-", $uri );
+	}
+
 	function addTriples( $triples, $aliases = array(), $map = array() )
 	{
+		$this->bnodeprefix++;
+
 		foreach( $triples as $t )
 		{
-			$t["s"] = $this->cleanURI($t["s"]);
+			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
 			$t["p"] = $this->cleanURI($t["p"]);
 			if( $t["p"] != "http://www.w3.org/2002/07/owl#sameAs" ) { continue; }
-			$aliases[$t["o"]] = $t["s"];
+			$aliases[$this->addBnodePrefix( $t["o"] )] = $t["s"];
 		}
 		foreach( $triples as $t )
 		{
 			$datatype = $t["o_datatype"];
-			if( $t["o_type"] == "literal" && !$datatype ) { $datatype = "literal"; }	
+			if( $t["o_type"] == "literal" && !$datatype ) { $datatype = "literal"; }
 			$this->addTriple( $t["s"], $t["p"], $t["o"], $datatype, $t["o_lang"], $aliases );
 		}
 		return sizeof( $triples );
 	}
-	
+
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
-		$s = $this->cleanURI( $s );
-		$p = $this->cleanURI( $p );
-	
+		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
+		if( $o_datatype != "literal" )
+		{
+			$o = $this->addBnodePrefix( $this->cleanURI( $o ) );
+		}
+
 		if( isset($aliases[$s]) ) { $s=$aliases[$s]; }
 		if( isset($aliases[$p]) ) { $p=$aliases[$p]; }
 		if( isset($aliases[$o]) ) { $o=$aliases[$o]; }
 
 		if( isset( $o_datatype ) && $o_datatype )
 		{
-			if( $o_datatype == 'literal' ) { $o_datatype = null; }	
+			if( $o_datatype == 'literal' ) { $o_datatype = null; }
 			$this->t["sp"][$s][$p][] = array(
 				"v"=>$o,
 				"d"=>$o_datatype,
@@ -271,7 +297,23 @@ class Graphite
 		$this->t["op"][$o][$p][] = $s;
 	}
 
-	public function cleanURI( $uri ) 
+	public function toArcTriples()
+	{
+		$arcTriples = array();
+		foreach( $this->allSubjects() as $s )
+		{
+			$arcTriples = array_merge( $arcTriples, $s->toArcTriples( false ) );
+		}
+		return $arcTriples;
+	}
+
+	public function serialize( $type = "RDFXML" )
+	{
+		$serializer = ARC2::getSer( $type, array( "ns" => $this->ns ) );
+		return $serializer->getSerializedTriples( $this->toArcTriples() );
+	}
+
+	public function cleanURI( $uri )
 	{
 		if( !$uri ) { return; }
 		return preg_replace( '/^(https?:\/\/[^:\/]+):80\//','$1/', $uri );
@@ -356,7 +398,7 @@ class Graphite
 		}
 		return $r;
 	}
-	
+
 	public function dump($options=array())
 	{
 		$r = array();
@@ -394,7 +436,7 @@ class Graphite_Node
 	function loadSameAs() { return 0; }
 	function loadSameAsOrg($prefix) { return 0; }
 	function loadDataGovUKBackLinks() { return 0; }
-	
+
 	function dumpText() { return "Non existant Node"; }
 	function dump() { return "<div style='padding:0.5em; background-color:lightgrey;border:dashed 1px grey;'>Non-existant Node</div>"; }
 	function nodeType() { return "#node"; }
@@ -439,53 +481,53 @@ class Graphite_Literal extends Graphite_Node
 
 	function __toString() { return $this->triple["v"]; }
 
-	function dumpValueText() 
+	function dumpValueText()
 	{
 		$r = '"'.$v.'"';
 		if( isset($this->triple["l"]) && $this->triple["l"])
-		{	
+		{
 			$r.="@".$this->triple["l"];
 		}
 		if( isset($this->triple["t"]) )
-		{	
+		{
 			$r.="^^".$this->g->shrinkURI($this->triple["t"]);
 		}
 		return $r;
 	}
 
-	function dumpValueHTML() 
+	function dumpValueHTML()
 	{
 		$v = htmlspecialchars( $this->triple["v"],ENT_COMPAT,"UTF-8" );
-		
+
 		$v = preg_replace( "/\t/", "<span class='special_char' style='font-size:70%'>[tab]</span>", $v );
 		$v = preg_replace( "/\n/", "<span class='special_char' style='font-size:70%'>[nl]</span><br />", $v );
 		$v = preg_replace( "/\r/", "<span class='special_char' style='font-size:70%'>[cr]</span>", $v );
 		$v = preg_replace( "/  +/e", "\"<span class='special_char' style='font-size:70%'>\".str_repeat(\"␣\",strlen(\"$0\")).\"</span>\"", $v );
 		$r = '"'.$v.'"';
-	
+
 		if( isset($this->triple["l"]) && $this->triple["l"])
-		{	
+		{
 			$r.="@".$this->triple["l"];
 		}
 		if( isset($this->triple["t"]) )
-		{	
+		{
 			$r.="^^".$this->g->shrinkURI($this->triple["t"]);
 		}
 		return $r;
 	}
 
-	function nodeType() 
-	{ 
+	function nodeType()
+	{
 		if( isset($this->triple["d"]) )
-		{	
+		{
 			return $this->triple["d"];
-		}	
+		}
 		return "#literal";
 	}
 
-	function dumpValue() 
+	function dumpValue()
 	{
-		return "<span style='color:blue'>".$this->dumpValueHTML()."</span>"; 
+		return "<span style='color:blue'>".$this->dumpValueHTML()."</span>";
 	}
 }
 
@@ -543,8 +585,8 @@ class Graphite_Resource extends Graphite_Node
 		foreach( $args as $arg )
 		{
 			list( $set, $relation_uri ) = $this->parsePropertyArg( $arg );
-			if( isset($this->g->t[$set][$this->uri]) 
-		 	 && isset($this->g->t[$set][$this->uri][$relation_uri]) )
+			if( isset($this->g->t[$set][$this->uri])
+			 && isset($this->g->t[$set][$this->uri][$relation_uri]) )
 			{
 				return true;
 			}
@@ -562,8 +604,8 @@ class Graphite_Resource extends Graphite_Node
 		foreach( $args as $arg )
 		{
 			list( $set, $relation_uri ) = $this->parsePropertyArg( $arg );
-			if( !isset($this->g->t[$set][$this->uri]) 
-		 	 || !isset($this->g->t[$set][$this->uri][$relation_uri]) )
+			if( !isset($this->g->t[$set][$this->uri])
+			 || !isset($this->g->t[$set][$this->uri][$relation_uri]) )
 			{
 				continue;
 			}
@@ -573,7 +615,7 @@ class Graphite_Resource extends Graphite_Node
 				if( is_array( $v ) )
 				{
 					$l []= new Graphite_Literal( $this->g, $v );
-				}	
+				}
 				else if( !isset($done[$v]) )
 				{
 					$l []= new Graphite_Resource( $this->g, $v );
@@ -587,14 +629,14 @@ class Graphite_Resource extends Graphite_Node
 	public function relations()
 	{
 		$r = array();
-		if( isset( $this->g->t["sp"][$this->uri] ) ) 
+		if( isset( $this->g->t["sp"][$this->uri] ) )
 		{
 			foreach( array_keys( $this->g->t["sp"][$this->uri] ) as $pred )
 			{
 				$r []= new Graphite_Relation( $this->g, $pred );
 			}
 		}
-		if( isset( $this->g->t["op"][$this->uri] ) ) 
+		if( isset( $this->g->t["op"][$this->uri] ) )
 		{
 			foreach( array_keys( $this->g->t["op"][$this->uri] ) as $pred )
 			{
@@ -603,6 +645,85 @@ class Graphite_Resource extends Graphite_Node
 		}
 
 		return new Graphite_ResourceList($this->g,$r);
+	}
+
+	public function toArcTriples( $bnodes = true )
+	{
+		$arcTriples = array();
+		$bnodes_to_add = array();
+
+		$s = $this->uri;
+		$s_type = "uri";
+		if( preg_match( '/^_:/', $s ) )
+		{
+			$s_type = "bnode";
+		}
+
+		foreach( $this->g->t["sp"][$s] as $p => $os )
+		{
+			$p = $this->g->expandURI( $p );
+			$p_type = "uri";
+			if( preg_match( '/^_:/', $p ) )
+			{
+				$p_type = "bnode";
+			}
+
+			foreach( $os as $o )
+			{
+				$o_lang = null;
+				$o_datatype = null;
+				if( is_array( $o ))
+				{
+					$o_type = "literal";
+					if( isset( $o["l"] ) && $o["l"] )
+					{
+						$o_lang = $o["l"];
+					}
+					if( isset( $o["d"] ) )
+					{
+						$o_datatype = $this->g->expandURI( $o["d"] );
+					}
+					$o = $o["v"];
+				}
+				else
+				{
+					$o = $this->g->expandURI( $o );
+					$o_type = "uri";
+					if( preg_match( '/^_:/', $o ) )
+					{
+						$o_type = "bnode";
+						$bnodes_to_add[] = $o;
+					}
+				}
+				$triple = array(
+					"s" => $s,
+					"s_type" => $s_type,
+					"p" => $p,
+					"p_type" => $p_type,
+					"o" => $o,
+					"o_type" => $o_type,
+				);
+				$triple["o_datatype"] = $o_datatype;
+				$triple["o_lang"] = $o_lang;
+
+				$arcTriples[] = $triple;
+			}
+		}
+
+		if( $bnodes )
+		{
+			foreach( array_unique( $bnodes_to_add ) as $bnode )
+			{
+				$arcTriples = array_merge( $arcTriples, $this->g->resource( $bnode )->toArcTriples() );
+			}
+		}
+		return $arcTriples;
+	}
+
+	public function serialize( $type = "RDFXML" )
+	{
+		$serializer = ARC2::getSer( $type, array( "ns" => $this->g->ns ) );
+		return $serializer->getSerializedTriples( $this->toArcTriples() );
 	}
 
 	public function load()
@@ -618,12 +739,12 @@ class Graphite_Resource extends Graphite_Node
 		return $n;
 	}
 
-	function loadDataGovUKBackLinks() 
+	function loadDataGovUKBackLinks()
 	{
 		$backurl = "http://backlinks.psi.enakting.org/resource/rdf/".$this->uri;
 		return $this->g->load( $backurl, array(), array( $this->uri=>1 ) );
 	}
-		
+
 	public function loadSameAs( $prefix=null )
 	{
 		$cnt = 0;
@@ -634,7 +755,7 @@ class Graphite_Resource extends Graphite_Node
 			{
 				continue;
 			}
-	
+
 			$cnt += $this->g->load( $sameas, array( $sameas=>$this->uri ) );
 		}
 		return $cnt;
@@ -664,7 +785,7 @@ class Graphite_Resource extends Graphite_Node
 				if( $uri == $type ) { return true; }
 			}
 		}
-	
+
 		return false;
 	}
 
@@ -732,7 +853,7 @@ class Graphite_Resource extends Graphite_Node
 				{
 					$typename = $this->get( "rdf:type" )->label();
 				}
-				else		
+				else
 				{
 					$bits = preg_split( "/[\/#]/", @$this->get( "rdf:type" )->uri );
 					$typename = array_pop( $bits );
@@ -748,14 +869,19 @@ class Graphite_Resource extends Graphite_Node
 	}
 
 	function __toString() { return $this->uri; }
-	function dumpValue($options=array()) 
-	{ 
+	function dumpValue($options=array())
+	{
 		$label = $this->dumpValueText();
 		if( $this->hasLabel() && @$options["labeluris"] )
 		{
 			$label = $this->label();
 		}
-		return "<a href='".$this->uri."' title='".$this->uri."' style='text-decoration:none;color:red'>".$label."</a>"; 
+		$href = $this->uri;
+		if( @$options["internallinks"] )
+		{
+			$href = "#".htmlentities($this->uri);
+		}
+		return "<a href='".$href."' title='".$this->uri."' style='text-decoration:none;color:red'>".$label."</a>";
 	}
 	function dumpValueText() { return $this->g->shrinkURI( $this->uri ); }
 	function nodeType() { return "#resource"; }
@@ -803,11 +929,11 @@ class Graphite_ResourceList extends ArrayIterator
 		$l = array();
 		foreach( $this as $resource )
 		{
-			$l [] = $resource->dump();			
+			$l [] = $resource->dump();
 		}
 		return join( "", $l );
 	}
-	
+
 	public function duplicate()
 	{
 		$l = array();
@@ -866,7 +992,7 @@ class Graphite_ResourceList extends ArrayIterator
 		return new Graphite_ResourceList($this->g,$l);
 	}
 
-	public function label() 
+	public function label()
 	{
 		$l = array();
 		foreach( $this as $resource )
@@ -875,8 +1001,8 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return new Graphite_ResourceList($this->g,$l);
 	}
-	
-	public function load() 
+
+	public function load()
 	{
 		$n = 0;
 		foreach( $this as $resource )
@@ -885,7 +1011,7 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return $n;
 	}
-	
+
 	public function allString( /* List */ )
 	{
 		$args = func_get_args();
@@ -1021,12 +1147,25 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return $list;
 	}
+
+	function allOfType( $uri )
+	{
+		$list = new Graphite_ResourceList( $this->g, array() );
+		foreach( $this as $item )
+		{
+			if( $item->isType( $uri ) )
+			{
+				$list [] = $item;
+			}
+		}
+		return $list;
+	}
 }
 
 function graphite_sort_list_cmp( $a, $b )
 {
 	global $graphite_sort_args;
-		
+
 	foreach( $graphite_sort_args as $arg )
 	{
 		$va = $a->get( $arg );
