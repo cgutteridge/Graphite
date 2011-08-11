@@ -775,12 +775,14 @@ class Graphite_ResourceList extends ArrayIterator
 	function __construct( $g, $a=array() )
 	{
 		$this->g = $g;
+		$this->arr = $a;
 		if( $a instanceof Graphite_ResourceList )
 		{
 			print "<li>Graphite warning: passing a Graphite_ResourceList as the array passed to new Graphite_ResourceList will make weird stuff happen.</li>";
 		}
-		parent::__construct( $a );
+		parent::__construct( $this->arr );
 	}
+
 
 	function join( $str )
 	{
@@ -828,14 +830,14 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 
 		$new_list = $this->duplicate();
-		usort($new_list, "graphite_sort_list_cmp" );
+		usort($new_list->arr, "graphite_sort_list_cmp" );
 
 		return $new_list;
 	}
 
 	public function uasort( $cmp )
 	{
-		usort($this, $cmp );
+		usort($this->arr, $cmp );
 	}
 
 	public function get( /* List */ )
