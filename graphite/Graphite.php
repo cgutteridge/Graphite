@@ -483,7 +483,7 @@ class Graphite_Literal extends Graphite_Node
 
 	function dumpValueText()
 	{
-		$r = '"'.$v.'"';
+		$r = '"'.$this->v.'"';
 		if( isset($this->triple["l"]) && $this->triple["l"])
 		{
 			$r.="@".$this->triple["l"];
