@@ -27,6 +27,7 @@
 # $graph->dumpText()
 # $resource->prepareDescription()
 # Descriptions in general
+# prettyLink, list->prettyLink list->link
 
 
 class Graphite
@@ -576,6 +577,27 @@ class Graphite_Resource extends Graphite_Node
 		return $l[0]->toString();
 	}
 
+	public function getDatatype( /* List */ )
+	{
+		$args = func_get_args();
+		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+
+		$l = $this->all( $args );
+		if( sizeof( $l ) == 0 ) { return; }
+		return $l[0]->datatype();
+	}
+	public function getLanguage( /* List */ )
+	{
+		$args = func_get_args();
+		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+
+		$l = $this->all( $args );
+		if( sizeof( $l ) == 0 ) { return; }
+		return $l[0]->language();
+	}
+
 	public function allString( /* List */ )
 	{
 		$args = func_get_args();
@@ -816,6 +838,12 @@ class Graphite_Resource extends Graphite_Node
 	{
 		return "<a title='".$this->uri."' href='".$this->uri."'>".$this->uri."</a>";
 	}
+	public function prettyLink()
+	{
+		$label = $this->uri;
+		if( $this->hasLabel() ) { $label = $this->label(); }
+		return "<a title='".$this->uri."' href='".$this->uri."'>$label</a>";
+	}
 
 	public function dumpText()
 	{
@@ -919,14 +947,16 @@ class Graphite_InverseRelation extends Graphite_Relation
 }
 class Graphite_ResourceList extends ArrayIterator
 {
+
 	function __construct( $g, $a=array() )
 	{
 		$this->g = $g;
+		$this->a = $a;
 		if( $a instanceof Graphite_ResourceList )
 		{
 			print "<li>Graphite warning: passing a Graphite_ResourceList as the array passed to new Graphite_ResourceList will make weird stuff happen.</li>";
 		}
-		parent::__construct( $a );
+		parent::__construct( $this->a );
 	}
 
 	function join( $str )
@@ -974,15 +1004,15 @@ class Graphite_ResourceList extends ArrayIterator
 			$graphite_sort_args [] = $arg;
 		}
 
-		$new_list = $this->duplicate();
-		usort($new_list, "graphite_sort_list_cmp" );
-
-		return $new_list;
+		$l = array();
+		foreach( $this as $resource ) { $l []= $resource; }
+		usort($l, "graphite_sort_list_cmp" );
+		return new Graphite_ResourceList($this->g,$l);
 	}
 
 	public function uasort( $cmp )
 	{
-		usort($this, $cmp );
+		usort($this->a, $cmp );
 	}
 
 	public function get( /* List */ )
@@ -1020,6 +1050,27 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return new Graphite_ResourceList($this->g,$l);
 	}
+
+	public function link() 
+	{
+		$l = array();
+		foreach( $this as $resource )
+		{
+			$l [] = $resource->link();
+		}
+		return new Graphite_ResourceList($this->g,$l);
+	}
+
+	public function prettyLink() 
+	{
+		$l = array();
+		foreach( $this as $resource )
+		{
+			$l [] = $resource->prettyLink();
+		}
+		return new Graphite_ResourceList($this->g,$l);
+	}
+	
 
 	public function load()
 	{
