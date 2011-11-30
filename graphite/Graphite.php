@@ -828,7 +828,9 @@ class Graphite_Resource extends Graphite_Node
 			{
 				$olist []= $obj->dumpValueText();
 			}
-			$plist []= $this->g->shrinkURI($prop)." ".join( ", ",$olist );
+			$arr = "->";
+			if( is_a( $prop, "Graphite_InverseRelation" ) ) { $arr = "<-"; }
+			$plist []= "$arr ".$this->g->shrinkURI($prop)." $arr ".join( ", ",$olist );
 		}
 		return $this->g->shrinkURI($this->uri)."\n    ".join( ";\n    ", $plist )." .\n";
 	}
@@ -1206,6 +1208,7 @@ class Graphite_Description
 	var $tree = array(
 		"+" => array(),
 		"-" => array() );
+	# header, footer
 
 	function __construct( $resource )
 	{
@@ -1228,6 +1231,14 @@ class Graphite_Description
 			}
 			$treeptr = &$treeptr[$dir][$pred];
 		}
+	}
+
+	function toDebug()
+	{
+		$json = array();
+		$this->_jsonify( $this->tree, $this->resource, $json );
+
+		return print_r( $json, 1 );
 	}
 
 	function toJSON()
@@ -1294,87 +1305,168 @@ class Graphite_Description
 	{
 		$unionbits = array();
 		$conbits = array();
-		$count = 0;
-		$this->_toSPARQL( $this->tree, 0, null, "", $unionbits, $conbits, $count );
-		return "CONSTRUCT { ".join( " . ", $conbits )." } WHERE {\n{ ".join( " }\nUNION\n{ ", $unionbits )." }\n}\n";
+		$unionbits = $this->_toSPARQL( $this->tree, "", null, "", $conbits );
+		return "CONSTRUCT { ".join( " . ", $conbits )." } WHERE {\n{ ".join( " }\n\n{ ", $unionbits )." }\n}\n";
 	}
 
-	function _toSPARQL($tree, $n, $in_dangler = null, $sparql = "", &$unionbits, &$conbits, &$count )
+	function _toSPARQL($tree, $suffix, $in_dangler = null, $sparqlprefix = "", &$conbits )
 	{
-		$uri = $this->resource->toString();
-	
+		$unionbits = array();
+		if( !isset( $in_dangler ) )
+		{
+			$in_dangler = "<".$this->resource->toString().">";
+		}
+
+		$i = 0;	
 		foreach( $tree as $dir=>$routes )
 		{
 			if( sizeof($routes) == 0 ) { continue; }
 
-			$sub = "ZZZZZsYYYYY$n";
-			$pre = "ZZZZZpYYYYY$n";
-			$obj = "ZZZZZoYYYYY$n";
-
-			if( $dir == "+" )
-			{
-				if( isset( $in_dangler ) )
-				{
-					$sub = $in_dangler;
-					$link = "$sub $pre $obj";
-				}
-				else
-				{
-					$link = "$sub $pre $obj FILTER ( $sub = <$uri> )";
-				}
-				$out_dangler = $obj;
-			}
-			else # inverse
-			{
-				$out_dangler = $sub;
-				if( isset( $in_dangler ) )
-				{
-					$obj = $in_dangler;
-					$link = "$sub $pre $obj";
-				}
-				else
-				{
-					$link = "$sub $pre $obj FILTER ( $obj = <$uri> )";
-				}
-			}
-			$flink = "";
-			$run_list = array();
+			$pres = array();
 			if( isset($routes["*"]) )
 			{
-				$run_list []= "$sparql $link";
+				$sub = "?s".$suffix."_".$i;
+				$pre = "?p".$suffix."_".$i;
+				$obj = "?o".$suffix."_".$i;
+	
+				if( $dir == "+" )
+				{
+					$out_dangler = $obj;
+					$sub = $in_dangler;
+				}
+				else # inverse
+				{
+					$out_dangler = $sub;
+					$obj = $in_dangler;
+				}
+
+				$sparql = "$sparqlprefix $sub $pre $obj .";
+				if( isset( $routes["*"] ) )
+				{
+					$bits_from_routes = $this->_toSPARQL( $routes["*"], $suffix."_".$i, $out_dangler, "", $conbits );
+					foreach( $bits_from_routes as $bit )
+					{
+						$sparql .= " OPTIONAL { $bit }";
+					}
+				}
+				$unionbits []= $sparql;
+				$conbits []= "$sub $pre $obj";
+
+				foreach( $routes as $pred=>$route )
+				{
+					if( $pred == "*" ) { continue; }
+
+					$pre = "<".$this->graph->expandURI( $pred ).">";
+
+					$bits_from_routes = $this->_toSPARQL( $route, $suffix."_".$i, $out_dangler, "$sparqlprefix $sub $pre $obj .", $conbits );
+					foreach( $bits_from_routes as $bit )
+					{
+						$unionbits []= $bit;
+					}
+				}
+				$i++;
 			}
 			else
 			{
 				foreach( array_keys( $routes ) as $pred )
 				{
-					$run_list []= "$sparql $link FILTER ( $pre = <".$this->graph->expandURI( $pred )."> )";
-				}
-			}
-			foreach( $run_list as $to_run_item )
-			{
-				$to_run = preg_replace( "/$sub/", "ZZZZZsXXXXX", $to_run_item );
-				$to_run = preg_replace( "/$pre/", "ZZZZZpXXXXX", $to_run );
-				$to_run = preg_replace( "/$obj/", "ZZZZZoXXXXX", $to_run );
-				$to_run = preg_replace( "/ZZZZZ/", "?", $to_run );
-				$to_run = preg_replace( "/YYYYY/", $count."x", $to_run );
-				$to_run = preg_replace( "/XXXXX/", $count, $to_run );
-				$unionbits []= $to_run;
-				$conbits []= "?s$count ?p$count ?o$count";
-				$count++;
-			}
-		
-			foreach( $routes as $pred=>$route )
-			{
-				if( $pred == "*" )
-				{
-					$this->_toSPARQL( $route, $n+1, $out_dangler, $sparql." $link", $unionbits, $conbits, $count  );
-				}
-				else
-				{
-					$this->_toSPARQL( $route, $n+1, $out_dangler, $sparql." $link FILTER ( $pre = <".$this->graph->expandURI( $pred )."> )", $unionbits, $conbits, $count );
+					$sub = "?s".$suffix."_".$i;
+					$pre = "<".$this->graph->expandURI( $pred ).">";
+					$obj = "?o".$suffix."_".$i;
+	
+					if( $dir == "+" )
+					{
+						$out_dangler = $obj;
+						$sub = $in_dangler;
+					}
+					else # inverse
+					{
+						$out_dangler = $sub;
+						$obj = $in_dangler;
+					}
+
+					$bits_from_routes = $this->_toSPARQL( $routes[$pred],$suffix."_".$i, $out_dangler, "", $conbits );
+
+					$sparql = "$sparqlprefix $sub $pre $obj .";
+					foreach( $bits_from_routes as $bit )
+					{
+						$sparql .= " OPTIONAL { $bit }";
+					}
+
+					$unionbits []= $sparql;
+					$conbits []= "$sub $pre $obj";
+
+					$i++;
 				}
 			}
 		}
+		return $unionbits;
+	} # end _toSPARQL
+
+	function getFormats()
+	{
+		return array(
+			"nt"=>"RDF (Triples)",
+			"ttl"=>"RDF (Turtle)",
+			"rdf"=>"RDF (XML)",
+			"rdf.html" => "RDF (RDF HTML Debug)",
+		);
+	}
+
+	function handleFormat( $format )
+	{
+		if( $format == 'json' )
+		{
+			if( isset( $_GET['callback'] ) )
+			{
+				header( "Content-type: application/javascript" );
+				print $_GET['callback']."( ".$this->toJSON()." );\n";
+			}
+			else
+			{
+				header( "Content-type: application/json" );
+				print $this->toJSON();
+			}
+
+			return true;
+		}
+
+		if( $format == 'ttl' )
+		{
+			header( "Content-type: text/turtle" );
+			print $this->graph->serialize( "Turtle" );
+			return true;
+		}
+
+		if( $format == 'nt' )
+		{
+			header( "Content-type: text/plain" );
+			print $this->graph->serialize( "NTriples" );
+			return true;
+		}
+
+		if( $format == 'rdf' )
+		{
+			header( "Content-type: application/rdf+xml" );
+			print $this->graph->serialize( "RDFXML" );
+			return true;
+		}
+
+		if( $format == 'rdf.html' )
+		{
+			header( "Content-type: text/html" );
+			print $this->graph->dump();
+			return true;
+		}
+
+		if( $format == 'debug' )
+		{
+			header( "Content-type: text/plain" );
+			print $this->toDebug();
+			return true;
+		}
+
+		return false;
 	}
 }
 
