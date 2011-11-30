@@ -30,6 +30,7 @@
 # prettyLink, list->prettyLink list->link
 
 
+
 class Graphite
 {
 	public function __construct( $namespaces = array(), $uri = null )
