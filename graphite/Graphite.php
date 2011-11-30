@@ -24,6 +24,7 @@
 # to document:
 # added sioc: (needs to be documented in the parent of graphite-docs.html),
 # addTriples, addTriple, loadSPARQL
+# prettyLink, list->prettyLink list->link
 
 
 class Graphite
