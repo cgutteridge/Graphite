@@ -1,8 +1,8 @@
 <?php
-# (c)2010 Christopher Gutteridge / University of Southampton
+# (c)2010,2011 Christopher Gutteridge / University of Southampton
 # some extra features and bugfixes by Bart Nagel
 # License: LGPL
-# Version 1.4
+# Version 1.5
 
 # Requires ARC2 to be included.
 # suggested call method:
@@ -24,6 +24,9 @@
 # to document:
 # added sioc: (needs to be documented in the parent of graphite-docs.html),
 # addTriples, addTriple, loadSPARQL
+# $graph->dumpText()
+# $resource->prepareDescription()
+# Descriptions in general
 
 
 class Graphite
@@ -399,7 +402,7 @@ class Graphite
 		return $r;
 	}
 
-	public function dump($options=array())
+	public function dump( $options=array() )
 	{
 		$r = array();
 		foreach( $this->t["sp"] as $subject_uri=>$foo )
@@ -408,6 +411,17 @@ class Graphite
 			$r []= $subject->dump($options);
 		}
 		return join("",$r );
+	}
+
+	public function dumpText( $options=array() )
+	{
+		$r = array();
+		foreach( $this->t["sp"] as $subject_uri=>$foo )
+		{
+			$subject = new Graphite_Resource( $this, $subject_uri );
+			$r []= $subject->dumpText($options);
+		}
+		return join("\n",$r );
 	}
 
 	public function forceString( &$uri )
@@ -885,6 +899,11 @@ class Graphite_Resource extends Graphite_Node
 	}
 	function dumpValueText() { return $this->g->shrinkURI( $this->uri ); }
 	function nodeType() { return "#resource"; }
+
+	function prepareDescription()
+	{
+		return new Graphite_Description( $this );
+	}
 }
 
 class Graphite_Relation extends Graphite_Resource
@@ -1173,4 +1192,190 @@ function graphite_sort_list_cmp( $a, $b )
 	}
 	return 0;
 }
+
+
+# A Graphite Description is an object to describe the routes of attributes
+# which we wish to use to describe a specific resource, and to allow that
+# to be nicely expressed in JSON.
+
+class Graphite_Description
+{
+	var $graph;
+	var $resource;
+	var $routes = array();
+	var $tree = array(
+		"+" => array(),
+		"-" => array() );
+
+	function __construct( $resource )
+	{
+		$this->graph = $resource->g;
+		$this->resource = $resource;	
+	}
+
+	function addRoute( $route )
+	{
+		$this->routes[$route] = true;
+		$preds = preg_split( '/\//', $route );
+		$treeptr = &$this->tree;
+		foreach( $preds as $pred )
+		{
+			$dir = "+";
+			if( substr($pred,0,1) == "-" ) { $pred = substr($pred,1); $dir = "-"; }
+			if( !isset( $treeptr[$dir][$pred] ) ) 
+			{
+				$treeptr[$dir][$pred] = array( "+" => array(), "-" => array() ); 
+			}
+			$treeptr = &$treeptr[$dir][$pred];
+		}
+	}
+
+	function toJSON()
+	{
+		$json = array();
+		$this->_jsonify( $this->tree, $this->resource, $json );
+
+		return json_encode( $json );
+	}
+
+	function _jsonify( $tree, $resource, &$json )
+	{
+		foreach( $resource->relations() as $relation )
+		{
+			$code = $this->graph->shrinkURI( $relation );
+			$jsonkey = $code;
+			$dir = "+";
+			if( $relation->nodeType() == "#inverseRelation" ) 
+			{ 
+				$dir = "-"; 
+				$jsonkey = "$jsonkey of"; 
+			}
+			if( isset($tree[$dir][$code]) || isset($tree[$dir]["*"]) )
+			{
+				foreach( $resource->all( $relation ) as $value )
+				{
+					if( is_a( $value, "Graphite_Literal" ) )
+					{
+						$json[$jsonkey][] = $value->toString();
+					}
+					else
+					{	
+						$subjson = array( 
+							"_links"=>array( 
+								"self"=>array( 
+									"href"=>$value->toString() 
+						)));
+						$follow_tree = array();
+						if( isset( $tree[$dir][$code]) )
+						{
+							$follow_tree = array_merge( $follow_tree, $tree[$dir][$code] );
+						}
+						if( isset( $tree[$dir]["*"]) )
+						{
+							$follow_tree = array_merge( $follow_tree, $tree[$dir]["*"] );
+						}
+						if( sizeof( $follow_tree ) )
+						{
+							$this->_jsonify( $follow_tree, $value, &$subjson );
+						}
+						$json[$jsonkey][] = $subjson;
+					}
+				}
+			}
+		}
+	}
+
+	function loadSPARQL( $endpoint )
+	{
+		return $this->graph->loadSPARQL( $endpoint, $this->toSPARQL() );
+	}
+
+	function toSPARQL()
+	{
+		$unionbits = array();
+		$conbits = array();
+		$count = 0;
+		$this->_toSPARQL( $this->tree, 0, null, "", $unionbits, $conbits, $count );
+		return "CONSTRUCT { ".join( " . ", $conbits )." } WHERE {\n{ ".join( " }\nUNION\n{ ", $unionbits )." }\n}\n";
+	}
+
+	function _toSPARQL($tree, $n, $in_dangler = null, $sparql = "", &$unionbits, &$conbits, &$count )
+	{
+		$uri = $this->resource->toString();
+	
+		foreach( $tree as $dir=>$routes )
+		{
+			if( sizeof($routes) == 0 ) { continue; }
+
+			$sub = "ZZZZZsYYYYY$n";
+			$pre = "ZZZZZpYYYYY$n";
+			$obj = "ZZZZZoYYYYY$n";
+
+			if( $dir == "+" )
+			{
+				if( isset( $in_dangler ) )
+				{
+					$sub = $in_dangler;
+					$link = "$sub $pre $obj";
+				}
+				else
+				{
+					$link = "$sub $pre $obj FILTER ( $sub = <$uri> )";
+				}
+				$out_dangler = $obj;
+			}
+			else # inverse
+			{
+				$out_dangler = $sub;
+				if( isset( $in_dangler ) )
+				{
+					$obj = $in_dangler;
+					$link = "$sub $pre $obj";
+				}
+				else
+				{
+					$link = "$sub $pre $obj FILTER ( $obj = <$uri> )";
+				}
+			}
+			$flink = "";
+			$run_list = array();
+			if( isset($routes["*"]) )
+			{
+				$run_list []= "$sparql $link";
+			}
+			else
+			{
+				foreach( array_keys( $routes ) as $pred )
+				{
+					$run_list []= "$sparql $link FILTER ( $pre = <".$this->graph->expandURI( $pred )."> )";
+				}
+			}
+			foreach( $run_list as $to_run_item )
+			{
+				$to_run = preg_replace( "/$sub/", "ZZZZZsXXXXX", $to_run_item );
+				$to_run = preg_replace( "/$pre/", "ZZZZZpXXXXX", $to_run );
+				$to_run = preg_replace( "/$obj/", "ZZZZZoXXXXX", $to_run );
+				$to_run = preg_replace( "/ZZZZZ/", "?", $to_run );
+				$to_run = preg_replace( "/YYYYY/", $count."x", $to_run );
+				$to_run = preg_replace( "/XXXXX/", $count, $to_run );
+				$unionbits []= $to_run;
+				$conbits []= "?s$count ?p$count ?o$count";
+				$count++;
+			}
+		
+			foreach( $routes as $pred=>$route )
+			{
+				if( $pred == "*" )
+				{
+					$this->_toSPARQL( $route, $n+1, $out_dangler, $sparql." $link", $unionbits, $conbits, $count  );
+				}
+				else
+				{
+					$this->_toSPARQL( $route, $n+1, $out_dangler, $sparql." $link FILTER ( $pre = <".$this->graph->expandURI( $pred )."> )", $unionbits, $conbits, $count );
+				}
+			}
+		}
+	}
+}
+
 
