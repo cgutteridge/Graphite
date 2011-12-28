@@ -1339,7 +1339,7 @@ class Graphite_Description
 						}
 						if( sizeof( $follow_tree ) )
 						{
-							$this->_jsonify( $follow_tree, $value, &$subjson );
+							$this->_jsonify( $follow_tree, $value, $subjson );
 						}
 						$json[$jsonkey][] = $subjson;
 					}
