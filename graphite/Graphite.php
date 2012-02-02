@@ -35,6 +35,7 @@ class Graphite
 {
 	public function __construct( $namespaces = array(), $uri = null )
 	{
+		$this->workAround4StoreBNodeBug = false;
 		$this->t = array( "sp" => array(), "op"=>array() );
 		foreach( $namespaces as $short=>$long )
 		{
@@ -67,6 +68,33 @@ class Graphite
 		$this->bnodeprefix = 0;
 	}
 
+	public function freeze( $filename )
+	{
+		$fh = fopen($filename, 'w') or die("can't open file");
+		fwrite($fh, "<?php\n" );
+		fwrite($fh, '$graph98a98dfc6c7e2825a205caf0d879339f = ');
+		fwrite($fh, var_export( $this, true ) );
+		fwrite($fh, ";\n");
+		fclose($fh);
+	}
+
+	public static function thaw( $filename )
+	{
+		include( $filename );
+		return $graph98a98dfc6c7e2825a205caf0d879339f;
+	}
+
+	public static function __set_state($data) // As of PHP 5.1.0
+	{
+		$graph = new Graphite;
+		$graph->bnodeprefix = $data['bnodeprefix'];
+		$graph->firstGraphURI = $data['firstGraphURI'];
+		$graph->loaded = $data['loaded'];
+		$graph->ns = $data['ns'];
+		$graph->workAround4StoreBNodeBug = $data["workAround4StoreBNodeBug"];
+		$graph->t = $data["t"];
+		return $graph;
+	}
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
 	{
 		$error = "";
@@ -260,6 +288,10 @@ class Graphite
 
 		foreach( $triples as $t )
 		{
+			if( $this->workAround4StoreBNodeBug ) 
+			{
+				if( $t["s"] == "_:NULL" || $t["o"] == "_:NULL" ) { continue; } 
+			}
 			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
 			$t["p"] = $this->cleanURI($t["p"]);
@@ -268,8 +300,8 @@ class Graphite
 		}
 		foreach( $triples as $t )
 		{
-			$datatype = $t["o_datatype"];
-			if( $t["o_type"] == "literal" && !$datatype ) { $datatype = "literal"; }
+			$datatype = @$t["o_datatype"];
+			if( @$t["o_type"] == "literal" && !$datatype ) { $datatype = "literal"; }
 			$this->addTriple( $t["s"], $t["p"], $t["o"], $datatype, $t["o_lang"], $aliases );
 		}
 		return sizeof( $triples );
@@ -277,6 +309,10 @@ class Graphite
 
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
+		if( $this->workAround4StoreBNodeBug )
+		{
+			if( $s == "_:NULL" || $o == "_:NULL" ) { return; } 
+		}
 		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
 		if( $o_datatype != "literal" )
 		{
@@ -1323,11 +1359,7 @@ class Graphite_Description
 					}
 					else
 					{	
-						$subjson = array( 
-							"_links"=>array( 
-								"self"=>array( 
-									"href"=>$value->toString() 
-						)));
+						$subjson = array( "_uri"=>$value->toString()  );
 						$follow_tree = array();
 						if( isset( $tree[$dir][$code]) )
 						{
@@ -1348,17 +1380,21 @@ class Graphite_Description
 		}
 	}
 
-	function loadSPARQL( $endpoint )
-	{
-		return $this->graph->loadSPARQL( $endpoint, $this->toSPARQL() );
-	}
-
-	function toSPARQL()
+	function loadSPARQL( $endpoint, $debug = false )
 	{
 		$unionbits = array();
 		$conbits = array();
 		$unionbits = $this->_toSPARQL( $this->tree, "", null, "", $conbits );
-		return "CONSTRUCT { ".join( " . ", $conbits )." } WHERE {\n{ ".join( " }\n\n{ ", $unionbits )." }\n}\n";
+		$n = 0;
+		foreach( $unionbits as $unionbit )
+		{
+			$sparql = "CONSTRUCT { ".join( " . ", $conbits )." } WHERE { $unionbit }";
+			if( $debug || @$_GET["_graphite_debug"] ) { 
+				print "<tt>\n\n".htmlspecialchars($sparql)."</tt>\n\n";
+			}
+			$n+=$this->graph->loadSPARQL( $endpoint, $sparql );
+		}
+		return $n;
 	}
 
 	function _toSPARQL($tree, $suffix, $in_dangler = null, $sparqlprefix = "", &$conbits )
@@ -1396,6 +1432,7 @@ class Graphite_Description
 				if( isset( $routes["*"] ) )
 				{
 					$bits_from_routes = $this->_toSPARQL( $routes["*"], $suffix."_".$i, $out_dangler, "", $conbits );
+					$i++;
 					foreach( $bits_from_routes as $bit )
 					{
 						$sparql .= " OPTIONAL { $bit }";
@@ -1411,12 +1448,12 @@ class Graphite_Description
 					$pre = "<".$this->graph->expandURI( $pred ).">";
 
 					$bits_from_routes = $this->_toSPARQL( $route, $suffix."_".$i, $out_dangler, "$sparqlprefix $sub $pre $obj .", $conbits );
+					$i++;
 					foreach( $bits_from_routes as $bit )
 					{
 						$unionbits []= $bit;
 					}
 				}
-				$i++;
 			}
 			else
 			{
@@ -1438,6 +1475,7 @@ class Graphite_Description
 					}
 
 					$bits_from_routes = $this->_toSPARQL( $routes[$pred],$suffix."_".$i, $out_dangler, "", $conbits );
+					$i++;
 
 					$sparql = "$sparqlprefix $sub $pre $obj .";
 					foreach( $bits_from_routes as $bit )
@@ -1448,16 +1486,17 @@ class Graphite_Description
 					$unionbits []= $sparql;
 					$conbits []= "$sub $pre $obj";
 
-					$i++;
 				}
 			}
 		}
+
 		return $unionbits;
 	} # end _toSPARQL
 
 	function getFormats()
 	{
 		return array(
+			"json"=>"JSON",
 			"nt"=>"RDF (Triples)",
 			"ttl"=>"RDF (Turtle)",
 			"rdf"=>"RDF (XML)",
