@@ -71,17 +71,13 @@ class Graphite
 	public function freeze( $filename )
 	{
 		$fh = fopen($filename, 'w') or die("can't open file");
-		fwrite($fh, "<?php\n" );
-		fwrite($fh, '$graph98a98dfc6c7e2825a205caf0d879339f = ');
-		fwrite($fh, var_export( $this, true ) );
-		fwrite($fh, ";\n");
+		fwrite($fh, serialize( $this ) );
 		fclose($fh);
 	}
 
 	public static function thaw( $filename )
 	{
-		include( $filename );
-		return $graph98a98dfc6c7e2825a205caf0d879339f;
+		return unserialize( join( "", file( $filename )));
 	}
 
 	public static function __set_state($data) // As of PHP 5.1.0
