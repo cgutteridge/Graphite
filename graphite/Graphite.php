@@ -490,6 +490,8 @@ class Graphite_Node
 	function nodeType() { return "#node"; }
 	function __toString() { return "[NULL]"; }
 	function toString() { return $this->__toString(); }
+	function datatype() { return null; } 
+	function language() { return null; } 
 
 
 	protected function parsePropertyArg( $arg )
@@ -529,6 +531,8 @@ class Graphite_Literal extends Graphite_Node
 	}
 
 	function __toString() { return $this->triple["v"]; }
+	function datatype() { return @$this->triple["o_type"]; }
+	function language() { return @$this->triple["o_lang"]; }
 
 	function dumpValueText()
 	{
