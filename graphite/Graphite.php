@@ -298,7 +298,7 @@ class Graphite
 		{
 			$datatype = @$t["o_datatype"];
 			if( @$t["o_type"] == "literal" && !$datatype ) { $datatype = "literal"; }
-			$this->addTriple( $t["s"], $t["p"], $t["o"], $datatype, $t["o_lang"], $aliases );
+			$this->addTriple( $t["s"], $t["p"], $t["o"], $datatype, @$t["o_lang"], $aliases );
 		}
 		return sizeof( $triples );
 	}
@@ -491,6 +491,7 @@ class Graphite_Node
 	function __toString() { return "[NULL]"; }
 	function toString() { return $this->__toString(); }
 
+
 	protected function parsePropertyArg( $arg )
 	{
 		if( is_a( $arg, "Graphite_Resource" ) )
@@ -577,6 +578,9 @@ class Graphite_Literal extends Graphite_Node
 	{
 		return "<span style='color:blue'>".$this->dumpValueHTML()."</span>";
 	}
+
+	function link() { return $this->__toString(); }
+	function prettyLink() { return $this->__toString(); }
 }
 
 class Graphite_Resource extends Graphite_Node
@@ -599,7 +603,7 @@ class Graphite_Resource extends Graphite_Node
 		return $l[0];
 	}
 
-	public function getString( /* List */ )
+	public function getLiteral( /* List */ )
 	{
 		$args = func_get_args();
 		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
@@ -609,6 +613,8 @@ class Graphite_Resource extends Graphite_Node
 		if( sizeof( $l ) == 0 ) { return; }
 		return $l[0]->toString();
 	}
+	# getString deprecated in favour of getLiteral 
+	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
 
 	public function getDatatype( /* List */ )
 	{
@@ -873,6 +879,27 @@ class Graphite_Resource extends Graphite_Node
 	}
 	public function prettyLink()
 	{
+		if( substr( $this->uri, 0, 4 ) == "tel:" )
+		{
+			$label = substr( $this->uri, 4 );
+			if( $this->hasLabel() ) { $label = $this->label(); }
+			return "
+ <a title='".$this->uri."' href='".$this->uri."'>$label</a>
+<a title='".$this->uri."' href='".$this->uri."'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAPCAYAAADHw76AAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wCAhE2KjaifPsAAAA7SURBVBjTY2AgBDYou/+H0RuU3f8z4VLIhKwaQwIbYERWHXB3JyNBHdSUQLYQGbDgCgEmdGcStAMnAACF1hJlKoB8rQAAAABJRU5ErkJggg' /></a>
+";
+			# icon adapted from cc-by icon at http://pc.de/icons/
+		}
+
+		if( substr( $this->uri, 0, 7 ) == "mailto:" )
+		{
+			$label = substr( $this->uri, 7 );
+			if( $this->hasLabel() ) { $label = $this->label(); }
+			return "
+ <a title='".$this->uri."' href='".$this->uri."'>$label</a>
+<a title='".$this->uri."' href='".$this->uri."'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAIAAAAvJUALAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wCAhEsArM6LtoAAAF/SURBVBjTfZFNTxNhFIXf985QypTAOLQdihMrHya6FFFqJBp+Gz+ABTFx45+w0QSCO5WFCisMUYMLhBZahdjp13vuveOCxGiiPnkWZ3FW59iD7bXK/KLhnrFk/kWm1g9aRx8oTpL93c2gPFcIqRDavxqUqx/3X0XlEgkPl1eW3tQ32CYZDzJ0/pD7Ssnbrae3794SHhAzw7na6sPXz9YHpqomLwxhFoZmOXjzOy8e36ktwzlmJgYUTobD2qOVd5tPfqRjxispnPGKab+wU99Yun9PMFQ4BogBYQgjE7k2W/28Vz8+avrRg8bXxqfd5ws3b/S7vcsCAz7DCSyRd3baLsXFyYnxL4d7B+9fxtNTcwvX8/nRxslpZSZWFYbzASh73y/OJybH2Tmy5mpSIUvTlbJPlp2bisLmcbNYugLAF6CX8ghZq6IqxpicR0kSe0TKuJw7N+J1Ox2B8QGXphxFoQj/foiI/spBMNo6a0PH/JNGOyzot9a5+S+Z6kW38xPpxe30BrwPeQAAAABJRU5ErkJggg' /></a>
+";
+			# icon adapted from cc-by icon at http://pc.de/icons/
+		}
 		$label = $this->uri;
 		if( $this->hasLabel() ) { $label = $this->label(); }
 		return "<a title='".$this->uri."' href='".$this->uri."'>$label</a>";
@@ -1061,7 +1088,9 @@ class Graphite_ResourceList extends ArrayIterator
 		return new Graphite_ResourceList($this->g,$l);
 	}
 
-	public function getString( /* List */ )
+
+	
+	public function getLiteral( /* List */)
 	{
 		$args = func_get_args();
 		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
@@ -1069,10 +1098,12 @@ class Graphite_ResourceList extends ArrayIterator
 		$l = array();
 		foreach( $this as $resource )
 		{
-			$l [] = $resource->getString( $args );
+			$l [] = $resource->getLiteral( $args );
 		}
 		return new Graphite_ResourceList($this->g,$l);
 	}
+	# getString deprecated in favour of getLiteral 
+	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
 
 	public function label()
 	{
