@@ -531,8 +531,8 @@ class Graphite_Literal extends Graphite_Node
 	}
 
 	function __toString() { return $this->triple["v"]; }
-	function datatype() { return @$this->triple["o_type"]; }
-	function language() { return @$this->triple["o_lang"]; }
+	function datatype() { return @$this->triple["d"]; }
+	function language() { return @$this->triple["l"]; }
 
 	function dumpValueText()
 	{
@@ -1380,31 +1380,87 @@ class Graphite_Description
 				$dir = "-"; 
 				$jsonkey = "$jsonkey of"; 
 			}
-			if( isset($tree[$dir][$code]) || isset($tree[$dir]["*"]) )
+			if( !isset($tree[$dir]["*"]) && !isset($tree[$dir][$code]) ) { continue; }
+
+			foreach( $resource->all( $relation ) as $value )
 			{
-				foreach( $resource->all( $relation ) as $value )
+				if( is_a( $value, "Graphite_Literal" ) )
 				{
-					if( is_a( $value, "Graphite_Literal" ) )
+					$json[$jsonkey][] = $value->toString();
+				}
+				else
+				{	
+					$subjson = array();
+					$uri = $value->toString();
+					if( substr( $uri,0,2 ) != "_:" ) { $subjson["_uri"] = $uri; }
+					if( isset( $tree[$dir][$code]) )
 					{
-						$json[$jsonkey][] = $value->toString();
+						$this->_jsonify( $tree[$dir][$code], $value, $subjson );
+					}
+					if( isset( $tree[$dir]["*"]) )
+					{
+						$this->_jsonify( $tree[$dir]["*"], $value, $subjson );
+					}
+					$json[$jsonkey][] = $subjson;
+				}
+			}
+		}
+	}
+
+	function toGraph()
+	{
+		$new_graph = new Graphite();
+		$this->_tograph( $this->tree, $this->resource, $new_graph );
+		return $new_graph;
+	}
+
+	function _tograph( $tree, $resource, &$new_graph )
+	{
+		foreach( $resource->relations() as $relation )
+		{
+			$code = $this->graph->shrinkURI( $relation );
+			$dir = "+";
+			if( $relation->nodeType() == "#inverseRelation" ) 
+			{ 
+				$dir = "-"; 
+			}
+
+			if( !isset($tree[$dir]["*"]) && !isset($tree[$dir][$code]) ) { continue; }
+
+			foreach( $resource->all( $relation ) as $value )
+			{
+				if( is_a( $value, "Graphite_Literal" ) )
+				{
+					$new_graph->addTriple( 
+						$resource->toString(),
+						$relation->toString(),
+						$value->toString(),
+						$value->datatype(),
+						$value->language() );
+				}
+				else
+				{	
+					if( isset( $tree[$dir][$code]) )
+					{
+						$this->_tograph( $tree[$dir][$code], $value, $new_graph );
+					}
+					if( isset( $tree[$dir]["*"]) )
+					{
+						$this->_tograph( $tree[$dir]["*"], $value, $new_graph );
+					}
+					if( $dir == "+" )
+					{
+						$new_graph->addTriple( 
+							$resource->toString(),
+							$relation->toString(),
+							$value->toString() );
 					}
 					else
-					{	
-						$subjson = array( "_uri"=>$value->toString()  );
-						$follow_tree = array();
-						if( isset( $tree[$dir][$code]) )
-						{
-							$follow_tree = array_merge( $follow_tree, $tree[$dir][$code] );
-						}
-						if( isset( $tree[$dir]["*"]) )
-						{
-							$follow_tree = array_merge( $follow_tree, $tree[$dir]["*"] );
-						}
-						if( sizeof( $follow_tree ) )
-						{
-							$this->_jsonify( $follow_tree, $value, $subjson );
-						}
-						$json[$jsonkey][] = $subjson;
+					{
+						$new_graph->addTriple( 
+							$value->toString(),
+							$relation->toString(),
+							$resource->toString() );
 					}
 				}
 			}
@@ -1556,28 +1612,28 @@ class Graphite_Description
 		if( $format == 'ttl' )
 		{
 			header( "Content-type: text/turtle" );
-			print $this->graph->serialize( "Turtle" );
+			print $this->toGraph()->serialize( "Turtle" );
 			return true;
 		}
 
 		if( $format == 'nt' )
 		{
 			header( "Content-type: text/plain" );
-			print $this->graph->serialize( "NTriples" );
+			print $this->toGraph()->serialize( "NTriples" );
 			return true;
 		}
 
 		if( $format == 'rdf' )
 		{
 			header( "Content-type: application/rdf+xml" );
-			print $this->graph->serialize( "RDFXML" );
+			print $this->toGraph()->serialize( "RDFXML" );
 			return true;
 		}
 
 		if( $format == 'rdf.html' )
 		{
 			header( "Content-type: text/html" );
-			print $this->graph->dump();
+			print $this->toGraph()->dump();
 			return true;
 		}
 
