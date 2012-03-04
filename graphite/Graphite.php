@@ -179,7 +179,10 @@ class Graphite
 			}
 			else
 			{
-				$parser = ARC2::getRDFParser();
+				$opts = array();
+				$opts['http_accept_header']= 'Accept: application/rdf+xml; q=0.9, text/turtle; q=0.8, */*; q=0.1';
+
+				$parser = ARC2::getRDFParser($opts);
 				# Don't try to load the same URI twice!
 
 				if( !isset( $this->firstGraphURI ) )
