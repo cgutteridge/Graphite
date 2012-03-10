@@ -23,7 +23,7 @@
 
 # to document:
 # added sioc: (needs to be documented in the parent of graphite-docs.html),
-# addTriples, addTriple, loadSPARQL
+# addTriples, addTriple, loadSPARQL, addCompressedTriple
 # $graph->dumpText()
 # $resource->prepareDescription()
 # Descriptions in general
@@ -301,6 +301,18 @@ class Graphite
 			$this->addTriple( $t["s"], $t["p"], $t["o"], $datatype, @$t["o_lang"], $aliases );
 		}
 		return sizeof( $triples );
+	}
+
+	function addCompressedTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
+	{
+		$s = $this->expandURI( $s );
+		$p = $this->expandURI( $p );
+		$o = $this->expandURI( $o );
+		if( isset( $o_datatype ) && $o_dataype != "literal" )
+		{
+			$o_datatype = $this->expandURI( $o_datatype );
+		}
+		$this->addTriple( $s,$p,$o,$o_datatype,$o_lang,$aliases );
 	}
 
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
