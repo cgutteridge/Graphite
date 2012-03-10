@@ -208,7 +208,10 @@ class Graphite
 			}
 			else
 			{
-				$parser = ARC2::getRDFParser();
+				$opts = array();
+				$opts['http_accept_header']= 'Accept: application/rdf+xml; q=0.9, text/turtle; q=0.8, */*; q=0.1';
+
+				$parser = ARC2::getRDFParser($opts);
 				# Don't try to load the same URI twice!
 
 				if( !isset( $this->firstGraphURI ) )
@@ -553,9 +556,9 @@ class Graphite_Literal extends Graphite_Node
 		{
 			$r.="@".$this->triple["l"];
 		}
-		if( isset($this->triple["t"]) )
+		if( isset($this->triple["d"]) )
 		{
-			$r.="^^".$this->g->shrinkURI($this->triple["t"]);
+			$r.="^^".$this->g->shrinkURI($this->triple["d"]);
 		}
 		return $r;
 	}
@@ -574,9 +577,9 @@ class Graphite_Literal extends Graphite_Node
 		{
 			$r.="@".$this->triple["l"];
 		}
-		if( isset($this->triple["t"]) )
+		if( isset($this->triple["d"]) )
 		{
-			$r.="^^".$this->g->shrinkURI($this->triple["t"]);
+			$r.="^^".$this->g->shrinkURI($this->triple["d"]);
 		}
 		return $r;
 	}
@@ -1058,6 +1061,7 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		parent::__construct( $this->a );
 	}
+
 
 	function join( $str )
 	{
