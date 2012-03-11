@@ -1,5 +1,5 @@
 <?php
-# (c)2010,2011 Christopher Gutteridge / University of Southampton
+# (c)2010,2011,2012 Christopher Gutteridge / University of Southampton
 # some extra features and bugfixes by Bart Nagel
 # License: LGPL
 # Version 1.5
