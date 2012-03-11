@@ -18,11 +18,10 @@
 # data community!
 
 # todo:
-# hasRelationValue, hasRelation, filter, loadString,
+# hasRelationValue, hasRelation, filter
 
 
 # to document:
-# added sioc: (needs to be documented in the parent of graphite-docs.html),
 # addTriples, addTriple, loadSPARQL, addCompressedTriple
 # $graph->dumpText()
 # $resource->prepareDescription()
@@ -277,7 +276,8 @@ class Graphite
 		return $this->addTriples( $parser->getTriples() );
 	}
 
-	function addBnodePrefix( $uri ) {
+	function addBnodePrefix( $uri ) 
+	{
 		return preg_replace( "/^_:/", "_:g" . $this->bnodeprefix . "-", $uri );
 	}
 

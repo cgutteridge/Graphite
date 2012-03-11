@@ -1,6 +1,16 @@
 
 <h2><a name='documentation'></a>Documentation</h2>
 
+freeze/thaw
+
+resource
+# $resource->prepareDescription() link prettylink, dumpText
+
+$list
+link prettylink dumpText
+
+# Descriptions in general
+
 <h3><a name='graphiteclass'></a>Graphite Class</h3>
 <div class='class'>
 <p>This object represents a set of zero or more bits of RDF data and gives you some functions to start poking them.</p>
@@ -9,6 +19,9 @@
 <dt>$graph = new Graphite();</dt>
 <dt>$graph = new Graphite( $namespace_map );</dt>
 <dd>Create a new instance of Graphite. See the <a href='#namespaces'>Namespaces</a> example above for how to specify a namespace map and a list of pre-declared namespaces. </dd>
+
+<dt>$resource = $graph-&gt;resource( $uri );</dt>
+<dd>Get the resource with given URI. $uri may be abbreviated to "namespace:value".</dd>
 
 <dt>$graph-&gt;ns( $alias, $namespace );</dt>
 <dd>Add an additional namespace alias to the Graphite instance.</dd>
@@ -22,14 +35,24 @@
 <dt>$count = $graph-&gt;addRDFXML( $base, $data );</dt>
 <dd>As for addTurtle but load a string of RDF XML.</dd>
 
-<dt>$resource = $graph-&gt;resource( $uri );</dt>
-<dd>Get the resource with given URI. $uri may be abbreviated to "namespace:value".</dd>
+<dt>$count = $graph-&gt;addTriples( $triples );</dt>
+<dd>Add triples to the graph from an ARC2 datastrcture. This is the inverse of toArcTriples.</dd>
+
+<dt>$graph-&gt;addTriple( $subject,$predicate,$object, [$datatype], [$language] );</dt>
+<dt>$graph-&gt;addCompressedTriple( $subject,$predicate,$object, [$datatype], [$language] );</dt>
+<dd>Add a single triple directly to the graph. Only addCompressedTriple accepts shortended URIs, eg foaf:name.</dd>
+
+<dt>$count = $graph-&gt;loadSPARQL( $endpoint, $query );</dt>
+<dd>Calls the SPARQL query on the endpoint and loads the results into the graph. $query should be a SPARQL "CONSTRUCT" query which returns RDF, rather than a table of resutls. The return value is the number of triples added.</dd>
 
 <dt>$graph-&gt;cacheDir( $dir, [$age] );</dt>
 <dd>$dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.</dd>
 
 <dt>print $graph-&gt;dump( [$options] );</dt>
 <dd>Returns the entire RDF in memory in nicely formatted HTML so you can see what's going on. Options is an optional array, same parameters as $options on a dump() of an individual resource.</dd>
+
+<dt>print $graph-&gt;dumpText( [$options] );</dt>
+<dd>As for dump() but returns a text version, without HTML mark-up. This is more useful for use on the command line.</dd>
 
 <dt>print_r( $graph-&gt;toArcTriples() );</dt>
 <dd>Returns the entire RDF in memory in Arc2's internal triples format.</dd>
@@ -48,6 +71,11 @@
 
 <dt>$resources = $graph-&gt;allObjects();</dt>
 <dd>Return a list of all resources in the graph which are the object of at least one triple.</dd>
+
+<dt>$graph-&gt;freeze( $filename );</dt>
+<dt>$graph = Graphite::thaw( $filename );</dt>
+<dd>Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. </dd>
+
 
 </dl>
 </dl>
