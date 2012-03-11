@@ -1,13 +1,8 @@
 
 <h2><a name='documentation'></a>Documentation</h2>
 
-freeze/thaw
+prepareDescription
 
-resource
-# $resource->prepareDescription() link prettylink, dumpText
-
-$list
-link prettylink dumpText
 
 # Descriptions in general
 
@@ -49,10 +44,8 @@ link prettylink dumpText
 <dd>$dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.</dd>
 
 <dt>print $graph-&gt;dump( [$options] );</dt>
-<dd>Returns the entire RDF in memory in nicely formatted HTML so you can see what's going on. Options is an optional array, same parameters as $options on a dump() of an individual resource.</dd>
-
 <dt>print $graph-&gt;dumpText( [$options] );</dt>
-<dd>As for dump() but returns a text version, without HTML mark-up. This is more useful for use on the command line.</dd>
+<dd>Returns the entire RDF in memory in nicely formatted HTML so you can see what's going on. Options is an optional array, same parameters as $options on a dump() of an individual resource. dumpText() does the same thing but with ASCII indents rather than HTML markup.</dd>
 
 <dt>print_r( $graph-&gt;toArcTriples() );</dt>
 <dd>Returns the entire RDF in memory in Arc2's internal triples format.</dd>
@@ -72,14 +65,31 @@ link prettylink dumpText
 <dt>$resources = $graph-&gt;allObjects();</dt>
 <dd>Return a list of all resources in the graph which are the object of at least one triple.</dd>
 
+<dt>$label_relations_list = $graph-&gt;labelRelations();</dt>
+<dt>$graph-&gt;labelRelations( $new_list );</dt>
+<dt>$graph-&gt;addLabelRelation();</dt>
+<dd>Return a list of the relations currently used for $resource-&gt;label(), if called with a parameter then this should be an array to <strong>replace</strong> the current list. To just add additonal relation types to use as labels, use addLabelRelation($relation).</dd>
+
+<dt>$icon_url = $graph&gt;mailtoURL();</dt>
+<dt>$graph&gt;mailtoURL( $new_icon_url );</dt>
+<dt>$icon_url = $graph&gt;telURL();</dt>
+<dt>$graph&gt;telURL( $new_icon_url );</dt>
+<dd>Get or set the URL of the icon used for mailto: and tel: links in prettyLink(). If set to an empty string then no icon will be shown.</dd>
+
 <dt>$graph-&gt;freeze( $filename );</dt>
 <dt>$graph = Graphite::thaw( $filename );</dt>
-<dd>Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. </dd>
+<dd>Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. <a href='https://github.com/cgutteridge/Graphite/blob/master/examples/freeze.php'>This example</a> is a command line script you can modify to load and freeze a graph.</dd>
 
 
 </dl>
 </dl>
 </div>
+
+
+
+
+
+
 
 <h3><a name='resourceclass'></a>Resource Class</h3>
 <div class='class'>
@@ -89,9 +99,18 @@ link prettylink dumpText
 <dt>$new_resource = $resource-&gt;get( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Get a single resource, related to the current resource by the given property. The property may be a URI or "namespace:value". It may be a literal or a normal resource. If there's no value, it returns a null resource object (not a null value), so your code will muddle through. If you specify multiple properties, then this returns the first resource it finds. To get a value from the inverse of a relationship, prefix the property string with "-". For example, to get the mayor of a city you may need to do $city-&gt;get( "-somens:isMayorOf" );</dd>
 
-<dt>$string = $resource-&gt;getString( $property );</dt>
-<dt>$string = $resource-&gt;getString( <a href='#resources'>*resource list*</a> );</dt>
-<dd>As for get() but return the result's string value.</dd>
+<dt>$string = $resource-&gt;toString();</dt>
+<dd>Returns the value of a literal, or the URI of a resource as a PHP string.</dd>
+
+<dt>$datatype = $resource-&gt;datatype();</dt>
+<dd>Returns the datatype of a literal, if it has one, otherwise null.</dd>
+
+<dt>$language = $resource-&gt;language();</dt>
+<dd>Returns the language of a literal, if it has one, otherwise null.</dd>
+
+<dt>$string = $resource-&gt;getLiteral( $property );</dt>
+<dt>$string = $resource-&gt;getLiteral( <a href='#resources'>*resource list*</a> );</dt>
+<dd>As for get() but return the result's string value. (getLiteral used to be called "getString", but this is now deprecated in favour of this more appropriate function name)</dd>
 
 <dt>$boolean = $resource-&gt;has( $property );</dt>
 <dt>$boolean = $resource-&gt;has( <a href='#resources'>*resource list*</a> );</dt>
@@ -126,16 +145,23 @@ link prettylink dumpText
 <dd>Return true if the resource is a null node, e.g. as the result of $resource-&gt;get("something:nonexistent").</dd>
 
 <dt>$label = $resource-&gt;label()</dt>
-<dd>Get a valid label for this resource, tries all of skos:prefLabel, rdfs:label, foaf:name, dct:title, dc:title, sioc:name.</dd>
+<dd>Get a valid label for this resource, tries all of skos:prefLabel, rdfs:label, foaf:name, dct:title, dc:title, sioc:name. Returns "[NULL]" if no label is available. To alter or add to the list of relationships considered to be labels, see $graph-&gt;labelRelations($list) and $graph-&gt;addLabelRelation($list)</dd>
+<dt>$boolean = $resource-&gt;hasLabel()</dt>
+<dd>Returns true if label() would return a valid lable, use it to avoid ugly [NULL]'s appearing.
 
 <dt>$htmllink = $resource-&gt;link()</dt>
 <dd>Returns &lt;a href='THIS'&gt;THIS&lt;/a&gt; -  saves time when wanting to link homepages, etc.</dd>
 
+<dt>$htmllink = $resource-&gt;prettyLink()</dt>
+<dd>Similar to link() but is a bit more clever. If the resource has a valid label (according to hasLabel(), above) then it uses that as the link text. If it's a tel: or mailto: URI then it shows the phone number or email address without the prefix, and shows a little email/phone icon. You can alter these icons or prevent them appearing using $graph-&gt;telIcon($url) and $graph-&gt;mailtoIcon($url)</dd>
+
 <dt>$dump = $resource-&gt;dump( [$options] );<dt>
-<dd>Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something. $options is an optional array of flags to modify how dump() renders HTML. 
+<dt>$dump = $resource-&gt;dumpText( [$options] );<dt>
+<dd>Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something. $options is an optional array of flags to modify how dump() renders HTML. dumpText() does the same think with ASCII indention instead of HTML markup, and is intended for debugging command-line scripts.
 <div><strong>"label"=&gt;1</strong> - add a label for the URI, and the rdf:type, to the top of each resource box, if the information is in the current graph.</div>
 <div><strong>"labeluris"=&gt;1</strong> - when listing the resources to which this URI relates, show them as a label, if possible, rather than a URI. Hovering the mouse will still show the URI.</div>
 <div><strong>"internallinks"=&gt;1</strong> - instead of linking directly to the URI, link to that resource's dump on the current page (which may or may not be present). This can, for example, make bnode nests easier to figure out.</div>
+
 </dd>
 
 <dt>print_r( $graph-&gt;toArcTriples() );</dt>
@@ -152,6 +178,7 @@ link prettylink dumpText
 <dl class="function_list">
 <dt>$count = $resource-&gt;loadSameAsOrg( $prefix );</dt>
 <dd>Look up this URI in <a href="http://sameas.org/">http://sameas.org</a> and follow any sameAs URIs from there which match the prefix. $prefix is enforced as sameAs.org may return hundreds of URIs.</dd>
+https://github.com/cgutteridge/Graphite/blob/master/examples/freeze.php
 
 <dt>$count = $resource-&gt;loadDataGovUKBackLinks()</dt>
 <dd>Takes the current resource and attempts to find backlinks via <a href='http://backlinks.psi.enakting.org/'>The EnAKTing project</a>. This works rather nicely with dbpedia URIs of British regions, cities etc.</dd>
@@ -159,6 +186,10 @@ link prettylink dumpText
 
 </dl>
 </div>
+
+
+
+
 
 <h3><a name='resourcelistclass'></a>ResourceList Class</h3>
 <div class='class'>
@@ -217,10 +248,23 @@ link prettylink dumpText
 <dt>$new_resourcelist = $resourcelist-&gt;except( <a href='#resources'>*resource list*</a> );</dt>
 <dd>Create a new resource list with containing only the resources which are in $resourcelist but <i>not</i> in the list being passed in. Only returns one instance of each resource no matter how many duplicates were in either list.</dd>
 
+<dt>$array = $resourcelist-&gt;link();</dt>
+<dt>$array = $resourcelist-&gt;prettyLink();</dt>
+<dd>Calls link() or prettyLink() on each item in the resource list and returns it as an array. The array is an object which you can call join() on, so you can use: 
+<pre>
+print $list-&gt;sort( "foaf:name" )-&gt;prettyLink()-&gt;join( ", ").".";
+</pre>
+To print a nicely formatted list of names, linking to the URIs.</dd>
+
 <dt>$dump = $resourcelist-&gt;dump( [$options] );</dt>
-<dd>Returns a string containing a dump of all the resources in the list. Options is an optional array, same parameters as $options on a dump() of an individual resource.</dd>
+<dt>$dump = $resourcelist-&gt;dumpText( [$options] );</dt>
+<dd>Returns a string containing a dump of all the resources in the list. Options is an optional array, same parameters as $options on a dump() of an individual resource. dumpText() does the same thing but with ASCII indents rather than HTML markup.</dd>
 </dl>
 </div>
+
+
+
+
 
 <h3><a name='resources'></a>* Note about Graphite methods which can take a list of resources</h3>
 <div class='class'>
@@ -243,5 +287,105 @@ link prettylink dumpText
 <p>This should make it quick and easy to write readable code!</p>
 </div>
 
-	</div>
 
+
+
+<h3><a name='resourcedescription'></a>Resource Description</h3>
+<div class='class'>
+
+<p>Resource descriptions are a powerful new feature added in Graphite v1.5. These let you specify what relationships are needed to describe a resource and then create a new graph from an existing graph, or load the required data from a SPARQL endpoint. No knowledge of SPARQL is required.</p>
+<p>It also allows you to output the resulting graph in a number of common formats, including JSON. The JSON is treated as a tree, based on the routes you specify from the starting resource. It is absolutely not JSON LD, although I would be happy to add JSON LD support as an additional output format if there's a demand for it.</p>
+<p>A Graphite Resource Description is a quick and easy way to make a linked-data website. You just describe the data you need about a resource, eg. a person, and look at the format suffix of the current page. If it's anything other than HTML you let the resource description object handle it for you, if it's HTML you use normal graphite functions to produce a page.</p>
+
+<p>The following example assumes that the PHP script is aliased to /building and everything after that in the path is a parameter to the script, eg. 59.html or 32.json</p>
+<pre>
+list( $id, $format ) = preg_split( "/\./", substr( $_SERVER["PATH_INFO"], 1 ), 2 );
+$uri = 'http://id.southampton.ac.uk/building/'.$id;
+
+$graph = new Graphite();
+$graph-&gt;ns( "sr", "http://data.ordnancesurvey.co.uk/ontology/spatialrelations/" );
+
+$rd = $graph-&gt;resource( "http://id.southampton.ac.uk/building/32" )-&gt;prepareDescription();
+
+$rd-&gt;addRoute( '*' );
+$rd-&gt;addRoute( '*/rdfs:label' );
+$rd-&gt;addRoute( '*/rdf:type' );
+$rd-&gt;addRoute( '-sr:within/rdf:type' );
+$rd-&gt;addRoute( '-sr:within/rdfs:label' );
+
+$n = $rd-&gt;loadSPARQL( "http://sparql.data.southampton.ac.uk/" );
+
+if( $format != "html" ) {
+        # Unless this is HTML just let Graphite serve the document.
+        if( !$rdesc-&gt;handleFormat( $format ) ) { 
+		header('HTTP/1.0 404 Not Found');
+		print "404 Not Found\n"; 
+	}
+        exit;
+}
+
+// output normal HTML page base on $graph...
+</pre>
+
+<dl class="function_list">
+<dt>$rd = $resource-&gt;prepareDescription()</dt>
+<dd>Create a fresh resource-description object using the given resource as a "root".</dd>
+
+<dt>$rd-&gt;addRoute($route)</dt>
+<dd>Add a route to the description. The format is a slash-separated list of "hops" from the root resource. Each "hop" is either a short-form predicate, like foaf:name or a "*" indicating all predicates should be followed, prefixing the predicate (or *) with a minus sign "-" indicates that this relation should be followed backwards rather than forward. 
+<p>So if we wanted all the members of a club:
+<pre>
+$rd = $graph-&gt;resource( "http://id.example.org/club/awesome-soc" )-&gt;prepareDescription();
+$rd-&gt;addRoute( "foaf:member" );
+</pre>
+but this only gets their URIs so we probably want their names too:
+<pre>
+$rd-&gt;addRoute( "foaf:member/foaf:name" );
+</pre>
+to add all the people they know (and their names):
+<pre>
+$rd-&gt;addRoute( "foaf:member/foaf:knows/foaf:name" );
+</pre>
+and to add all the people who know members of this club:
+<pre>
+$rd-&gt;addRoute( "foaf:member/-foaf:knows/foaf:name" );
+</pre>
+note that "foaf:member/-foaf:knows/foaf:name" will add "foaf:member/-foaf:knows" and "foaf:member/" automatically.
+</p>
+
+<p>The most common routes you will want are:
+<pre>
+$rd-&gt;addRoute( "*" );
+$rd-&gt;addRoute( "*/rdf:type" );
+$rd-&gt;addRoute( "*/rdfs:label" );
+</pre>
+</p>
+
+<p>A richer syntax may be added in a future version, ideally I'd like something which allowed "*/(rdf:type|rdfs:label)".</p>
+
+<dt>$formats = $rd-&gt;getFormats()</dt>
+<dd>Return an array of the formats handleFormat currently supports, with the format code as keys, and the values are a human-readable name.</dd>
+
+
+<dt>$handled = $rd-&gt;handleFormat($format)</dt>
+<dd>Send a document based on the resource description, in the format requested. Return true if Graphite understands that format.
+<ul>
+<li>"json" : JSON structured tree data. Not a formal JSON-LD format as I believe it's too complicated for the requirements of most coders wishing to consume JSON. If ?callback=funcname is specified then the output will be in the form of a JSONP script.</li>
+<li>"nt" : N-Triples - a list of uncompressed triples. Verbose but easy to parse.</li>
+<li>"rdf" : RDF+XML - the ubiquitous but heinous XML serialisation of RDF.</li>
+<li>"ttl" : Turtle - the much nicer Turtle serialisation.</li>
+<li>"rdf.html" : An HTML description of the data. The results of running $graph-&gt;dump(). Really handy for debugging.</li>
+</ul>
+<p>I am considering adding some additional formats, including RDFa (as a bunch of &lt;span&gt; elements), KML (find things that have a lat/long etc. basically nicking the code from <a hre='http://graphite.ecs.soton.ac.uk/geo2kml/'>geo2kml</a>), JSON-LD - which is a lossless way to describe RDF in JSON, .dot - a format used to produce images of graphs. Please <a href='mailto:cjg@ecs.soton.ac.uk'>drop me a line</a> if any of these, or others, are useful to you.</p>
+
+</dd>
+
+<dt>$count = $rd-&gt;loadSPARQL($endpoint)</dt>
+<dd>This uses one or more SPARQL queries to the given endpoint to get all the triples required for the description. The return value is the total number of triples added to the graph.</dd>
+
+<dt>$new_graph = $rd-&gt;toGraph()</dt>
+<dd>In addition to loadSPARQL you can use $rd-&gt;toGraph() which creates a new Graphite graph object from the triples in the current graph, using the resource description as the pattern of what to copy. Preferences such as namespaces are not currently copied to the new graph, but may be in a later version of Graphite.</dd>
+
+</dl>
+
+</div>
