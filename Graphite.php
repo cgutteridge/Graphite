@@ -21,15 +21,6 @@
 # hasRelationValue, hasRelation, filter
 
 
-# to document:
-# addTriples, addTriple, loadSPARQL, addCompressedTriple
-# $graph->dumpText()
-# $resource->prepareDescription()
-# Descriptions in general
-# prettyLink, list->prettyLink list->link
-
-
-
 class Graphite
 {
 	public function __construct( $namespaces = array(), $uri = null )
@@ -56,6 +47,34 @@ class Graphite
 
 		$this->loaded = array();
 		$this->debug = false;
+
+		$this->labelRelations = array( 
+			"skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" );
+		$this->mailtoIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAIAAAAvJUALAAAABGdBTUEAALGPC/xhBQAAAAlwSFlz
+AAALEwAACxMBAJqcGAAAAAd0SU1FB9wCAhEsArM6LtoAAAF/SURBVBjTfZFNTxNhFIXf985QypTA
+OLQdihMrHya6FFFqJBp+Gz+ABTFx45+w0QSCO5WFCisMUYMLhBZahdjp13vuveOCxGiiPnkWZ3FW
+59iD7bXK/KLhnrFk/kWm1g9aRx8oTpL93c2gPFcIqRDavxqUqx/3X0XlEgkPl1eW3tQ32CYZDzJ0
+/pD7Ssnbrae3794SHhAzw7na6sPXz9YHpqomLwxhFoZmOXjzOy8e36ktwzlmJgYUTobD2qOVd5tP
+fqRjxispnPGKab+wU99Yun9PMFQ4BogBYQgjE7k2W/28Vz8+avrRg8bXxqfd5ws3b/S7vcsCAz7D
+CSyRd3baLsXFyYnxL4d7B+9fxtNTcwvX8/nRxslpZSZWFYbzASh73y/OJybH2Tmy5mpSIUvTlbJP
+lp2bisLmcbNYugLAF6CX8ghZq6IqxpicR0kSe0TKuJw7N+J1Ox2B8QGXphxFoQj/foiI/spBMNo6
+a0PH/JNGOyzot9a5+S+Z6kW38xPpxe30BrwPeQAAAABJRU5ErkJggg==
+';
+		$this->telIcon = 'data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABGdBTUEAALGPC/xhBQAAAAZiS0dE
+AP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wCBxIsM9d8YIsAAAItSURB
+VCjPTZLLS5VhEMZ/7/ediyiek1csOSc9ZQqhQpAVWC3auGyh9BfUKjFw4aZVQW0SxD+hVeU+WklW
+RkVQoEYoZXhMyeupMPV878y0+MSaxczDwMzzzMUBDA6NDPR0N4ymkmFOTTGD2MVmB1hEi+9nS8Pj
+Y/cn3ODQyMD4nQuP9//su6nXc+Sb62k93ggYGGB6WAhGOuXs1r25a+HNG1efnS5UZx8+es7C11WW
+ims0N9WQqUpjKmAKGGYCavjIu+1f/nyQSrrc1PQs6+slfBRR+rnD1lYJU8FUUBFU/GEUFcKQXMLU
+SIaxDNNY1u7uPqoRKnYg2TAslmyGmRKoKifyDQQuTtRmK2nN16FeUBVMfcwuMUYFDBJmSqY6TeDA
+VKmqTFKVTqDiwQw9ZPy3KDMliOmFky31gLL0fYN3H76gKqh6THw8wn9zYkaAGSaeS+faqM1UYqK8
+ejvPx5lFnAm7e7ssLK5QLu9jEsXNMBKYoSokAug9W+Dp5CzlyPPizTzLq5tsl/6wtvGb5qYsne1N
+tBUaQY3AMEw9IhFtrfVc7ClQkQrZ2yvz6fMKqz+2URWWljeZnJ7HIg8YgXgtIh4TISqX6Wpvou9y
+B3U1FaSTAQGgqjgHNZkKDMGLFcOWjt7lK2cS/RKpw+ITZKtTdJ06Sm1NJZulHXwk5I8dob+vk1TC
+2ZOXdt0BDA3fHuguhKNBQA4Md/CmzjnCwIGLH70cWXHmmw2PPbg78Rex1nK3Gk8UNQAAAABJRU5E
+rkJggg==
+';
 
 		$this->firstGraphURI = null;
 		if( $uri )
@@ -107,6 +126,31 @@ class Graphite
 	}
 
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
+
+	public function labelRelations( $new = null )
+	{
+		$lr = $this->labelRelations;
+		if( isset( $new ) ) { $this->labelRelations = $new; }
+		return $lr;
+	}
+	public function addLabelRelation( $addition )
+	{
+		$this->labelRelations []= $addition;
+	}
+
+	public function mailtoIcon( $new = null )
+	{
+		$icon = $this->mailtoIcon;
+		if( isset( $new ) ) { $this->mailtoIcon = $new; }
+		return $icon;
+	}
+
+	public function telIcon( $new = null )
+	{
+		$icon = $this->telIcon;
+		if( isset( $new ) ) { $this->telIcon = $new; }
+		return $icon;
+	}
 
 	function removeFragment( $uri )
 	{
@@ -885,11 +929,11 @@ class Graphite_Resource extends Graphite_Node
 
 	public function hasLabel()
 	{
-		return $this->has( "skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" );
+		return $this->has( $this->g->labelRelations() );
 	}
 	public function label()
 	{
-		return $this->get( "skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" )->toString();
+		return $this->getLiteral( $this->g->labelRelations() );
 	}
 
 	public function link()
@@ -902,24 +946,15 @@ class Graphite_Resource extends Graphite_Node
 		{
 			$label = substr( $this->uri, 4 );
 			if( $this->hasLabel() ) { $label = $this->label(); }
-			return "
-<span style='white-space:nowrap'><a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='data:image/png;base64,
-iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABGdBTUEAALGPC/xhBQAAAAZiS0dE
-AP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wCBxIsM9d8YIsAAAItSURB
-VCjPTZLLS5VhEMZ/7/ediyiek1csOSc9ZQqhQpAVWC3auGyh9BfUKjFw4aZVQW0SxD+hVeU+WklW
-RkVQoEYoZXhMyeupMPV878y0+MSaxczDwMzzzMUBDA6NDPR0N4ymkmFOTTGD2MVmB1hEi+9nS8Pj
-Y/cn3ODQyMD4nQuP9//su6nXc+Sb62k93ggYGGB6WAhGOuXs1r25a+HNG1efnS5UZx8+es7C11WW
-ims0N9WQqUpjKmAKGGYCavjIu+1f/nyQSrrc1PQs6+slfBRR+rnD1lYJU8FUUBFU/GEUFcKQXMLU
-SIaxDNNY1u7uPqoRKnYg2TAslmyGmRKoKifyDQQuTtRmK2nN16FeUBVMfcwuMUYFDBJmSqY6TeDA
-VKmqTFKVTqDiwQw9ZPy3KDMliOmFky31gLL0fYN3H76gKqh6THw8wn9zYkaAGSaeS+faqM1UYqK8
-ejvPx5lFnAm7e7ssLK5QLu9jEsXNMBKYoSokAug9W+Dp5CzlyPPizTzLq5tsl/6wtvGb5qYsne1N
-tBUaQY3AMEw9IhFtrfVc7ClQkQrZ2yvz6fMKqz+2URWWljeZnJ7HIg8YgXgtIh4TISqX6Wpvou9y
-B3U1FaSTAQGgqjgHNZkKDMGLFcOWjt7lK2cS/RKpw+ITZKtTdJ06Sm1NJZulHXwk5I8dob+vk1TC
-2ZOXdt0BDA3fHuguhKNBQA4Md/CmzjnCwIGLH70cWXHmmw2PPbg78Rex1nK3Gk8UNQAAAABJRU5E
-rkJggg==
-'></a><a title='".$this->uri."' href='".$this->uri."'>$label</a></span>
-
-";
+			$icon = "";
+			$iconURL = $this->g->telIcon();
+			if( $iconURL != "" );
+			{
+				$icon = 
+"<a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='$iconURL' /></a>";
+			}
+			return 
+"<span style='white-space:nowrap'>$icon<a title='".$this->uri."' href='".$this->uri."'>$label</a></span>";
 
 			# icon adapted from cc-by icon at http://pc.de/icons/
 		}
@@ -928,18 +963,15 @@ rkJggg==
 		{
 			$label = substr( $this->uri, 7 );
 			if( $this->hasLabel() ) { $label = $this->label(); }
-			return "
-<span style='white-space:nowrap'><a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAIAAAAvJUALAAAABGdBTUEAALGPC/xhBQAAAAlwSFlz
-AAALEwAACxMBAJqcGAAAAAd0SU1FB9wCAhEsArM6LtoAAAF/SURBVBjTfZFNTxNhFIXf985QypTA
-OLQdihMrHya6FFFqJBp+Gz+ABTFx45+w0QSCO5WFCisMUYMLhBZahdjp13vuveOCxGiiPnkWZ3FW
-59iD7bXK/KLhnrFk/kWm1g9aRx8oTpL93c2gPFcIqRDavxqUqx/3X0XlEgkPl1eW3tQ32CYZDzJ0
-/pD7Ssnbrae3794SHhAzw7na6sPXz9YHpqomLwxhFoZmOXjzOy8e36ktwzlmJgYUTobD2qOVd5tP
-fqRjxispnPGKab+wU99Yun9PMFQ4BogBYQgjE7k2W/28Vz8+avrRg8bXxqfd5ws3b/S7vcsCAz7D
-CSyRd3baLsXFyYnxL4d7B+9fxtNTcwvX8/nRxslpZSZWFYbzASh73y/OJybH2Tmy5mpSIUvTlbJP
-lp2bisLmcbNYugLAF6CX8ghZq6IqxpicR0kSe0TKuJw7N+J1Ox2B8QGXphxFoQj/foiI/spBMNo6
-a0PH/JNGOyzot9a5+S+Z6kW38xPpxe30BrwPeQAAAABJRU5ErkJggg==
-'></a><a title='".$this->uri."' href='".$this->uri."'>$label</a></span>
-";
+			$icon = "";
+			$iconURL = $this->g->mailtoIcon();
+			if( $iconURL != "" );
+			{
+				$icon = 
+"<a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='$iconURL' /></a>";
+			}
+			return 
+"<span style='white-space:nowrap'>$icon<a title='".$this->uri."' href='".$this->uri."'>$label</a></span>";
 			# icon adapted from cc-by icon at http://pc.de/icons/
 		} 
 
