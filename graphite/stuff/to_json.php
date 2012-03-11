@@ -18,9 +18,6 @@ $rd->addRoute( '-sr:within/rdfs:label' );
 
 $n = $rd->loadSPARQL( "http://sparql.data.southampton.ac.uk/" );
 
-$format = "debug";
-
-if( $format != "html" ) { if( !$rd->handleFormat( $format ) ) { print "404!\n"; exit; } }
+$rd->handleFormat( "json" );
 
 
-print "DEFAULT:html";
