@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.9.2" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+ <name>Graphite</name>
+ <channel>pear.php.net</channel>
+ <summary>An RDF API for PHP</summary>
+ <description>PHP RDF Library</description>
+ <lead>
+  <name>Christopher Gutteridge</name>
+  <user>cgutteridge</user>
+  <email>cjg@ecs.soton.ac.uk</email>
+  <active>yes</active>
+ </lead>
+ <date>2012-03-12</date>
+ <time>22:55:01</time>
+ <version>
+  <release>0.1.6</release>
+  <api>0.1.6</api>
+ </version>
+ <stability>
+  <release>stable</release>
+  <api>stable</api>
+ </stability>
+ <license uri="http://www.php.net/license">PHP License</license>
+ <notes>
+Misc fixes
+ </notes>
+ <contents>
+  <dir baseinstalldir="/" name="/">
+   <file baseinstalldir="/" md5sum="568bcf56ed8ed31319d1d9bb23084b1f" name="examples/freeze.php" role="doc" />
+   <file baseinstalldir="/" md5sum="2ada2cb3fd46e99ae89418c3777c3764" name="examples/prettyLink.php" role="doc" />
+   <file baseinstalldir="/" md5sum="2065b9e838c9318b5375468f24fd0c3e" name="examples/to_json.php" role="doc" />
+   <file baseinstalldir="/" md5sum="0937feb3b19e28477b450d8c26ab196d" name="examples/icons/mail.png" role="doc" />
+   <file baseinstalldir="/" md5sum="1b861e154384dabb08b8f4c2f05f5d6d" name="examples/icons/telephone-handset.png" role="doc" />
+   <file baseinstalldir="/" md5sum="b5ac5909ee58d6f8c2f565e8000a42f4" name="graphite-docs.html" role="doc" />
+   <file baseinstalldir="/" md5sum="f56672e79e96dfb867907dc15fdefefe" name="Graphite.php" role="php" />
+   <file baseinstalldir="/" md5sum="d712c72234c3b329630dc947faab0412" name="README" role="data" />
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5.0.0</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.0b1</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <phprelease />
+ <changelog>
+  <release>
+   <version>
+    <release>0.1.6</release>
+    <api>0.1.6</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2012-03-12</date>
+   <license uri="http://www.php.net/license">PHP License</license>
+   <notes>
+Misc fixes
+   </notes>
+  </release>
+ </changelog>
+</package>
