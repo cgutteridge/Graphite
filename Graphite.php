@@ -369,7 +369,7 @@ rkJggg==
 			if( $s == "_:NULL" || $o == "_:NULL" ) { return; } 
 		}
 		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
-		if( !isset($o_datatype) )
+		if( !isset($o_datatype) || $o_datatype == "" )
 		{
 			$o = $this->addBnodePrefix( $this->cleanURI( $o ) );
 		}
