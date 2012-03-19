@@ -33,6 +33,7 @@ class Graphite
 		}
 		$this->ns( "foaf", "http://xmlns.com/foaf/0.1/" );
 		$this->ns( "dc",   "http://purl.org/dc/elements/1.1/" );
+		$this->ns( "dcterms",  "http://purl.org/dc/terms/" );
 		$this->ns( "dct",  "http://purl.org/dc/terms/" );
 		$this->ns( "rdf",  "http://www.w3.org/1999/02/22-rdf-syntax-ns#" );
 		$this->ns( "rdfs", "http://www.w3.org/2000/01/rdf-schema#" );
@@ -369,7 +370,7 @@ rkJggg==
 			if( $s == "_:NULL" || $o == "_:NULL" ) { return; } 
 		}
 		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
-		if( $o_datatype != "literal" )
+		if( !isset($o_datatype) || $o_datatype == "" )
 		{
 			$o = $this->addBnodePrefix( $this->cleanURI( $o ) );
 		}
