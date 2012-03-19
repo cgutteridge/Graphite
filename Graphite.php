@@ -431,8 +431,7 @@ rkJggg==
 	{
 		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/', $short ) )
 		{
-			print "<ul><li>Setting a namespace called '$short' is just asking for trouble. Abort.</li></ul>";
-			exit;
+			throw new InvalidArgumentException("Setting a namespace called '$short' is just asking for trouble. Abort.");
 		}
 		$this->ns[$short] = $long;
 	}

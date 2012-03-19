@@ -41,21 +41,33 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
         $this->assertSame('foaf:knows', $this->graph->shrinkURI('http://xmlns.com/foaf/0.1/knows'));
     }
 
-    /** @expectedException InvalidArgumentException */
-    public function testNs1() {
+    /**
+     * @expectedException InvalidArgumentException Empty namespace 
+     */
+    public function testNsRequiresValidInput() {
         $this->graph->ns(null, null);
     }
    
-    /** @expectedException InvalidArgumentException */
-    public function testNs2() {
+    /**
+     * @expectedException InvalidArgumentException Setting a namespace called 'urn' is just asking for trouble. Abort.
+     */
+    public function testNsProbhitsRedefiningCoreNamespaces() {
         $this->graph->ns('urn', 'whee');
     }
 
 
-    public function testNs3() {
+    public function testNs() {
         $this->graph->ns('fish', 'pants');
 
         $this->assertContains('pants', $this->graph->ns);
+    }
+
+    public function testCleanURI() {
+        $this->assertSame(null, $this->graph->cleanURI(null));
+
+        $this->assertSame('http://google.com/pish/pash#20:80', $this->graph->cleanURI('http://google.com:80/pish/pash#20:80'));
+
+        $this->assertSame('file:///odd/uri/scheme', $this->graph->cleanURI('file:///odd/uri/scheme'));
     }
 
     public function test() {
@@ -80,9 +92,7 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	public function toArcTriples()
 	public function serialize( $type = "RDFXML" )
-	public function cleanURI( $uri )
 	public function primaryTopic( $uri = null )
-	public function ns( $short, $long )
 	public function allOfType( $uri )
 	public function allSubjects()
 	public function allObjects()
