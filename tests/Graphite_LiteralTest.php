@@ -26,7 +26,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testLink() {
-        $this->assertSame(null, $this->node->link());
+        $this->assertSame("", $this->node->link());
 
         $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
@@ -34,7 +34,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testPrettyLink() {
-        $this->assertSame(null, $this->node->prettyLink());
+        $this->assertSame("", $this->node->prettyLink());
 
         $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
