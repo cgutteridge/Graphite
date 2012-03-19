@@ -153,24 +153,22 @@ class Graphite_Description
 
 	function loadSPARQL( $endpoint, $debug = false )
 	{
-		$unionbits = array();
-		$conbits = array();
-		$unionbits = $this->_toSPARQL( $this->tree, "", null, "", $conbits );
+		$bits = $this->_toSPARQL( $this->tree, "", null, "" );
 		$n = 0;
-		foreach( $unionbits as $unionbit )
+		foreach( $bits as $bit )
 		{
-			$sparql = "CONSTRUCT { ".join( " . ", $conbits )." } WHERE { $unionbit }";
+			$sparql = "CONSTRUCT { ".$bit['construct']." } WHERE { ".$bit['where']." }";
 			if( $debug || @$_GET["_graphite_debug"] ) { 
-				print "<tt>\n\n".htmlspecialchars($sparql)."</tt>\n\n";
+				 print "<div style='padding: 1em'><tt>\n\n".htmlspecialchars($sparql)."</tt></div>\n\n";
 			}
 			$n+=$this->graph->loadSPARQL( $endpoint, $sparql );
 		}
 		return $n;
 	}
 
-	function _toSPARQL($tree, $suffix, $in_dangler = null, $sparqlprefix = "", &$conbits )
+	function _toSPARQL($tree, $suffix, $in_dangler = null, $sparqlprefix = "" )
 	{
-		$unionbits = array();
+		$bits = array();
 		if( !isset( $in_dangler ) )
 		{
 			$in_dangler = "<".$this->resource->toString().">";
@@ -199,18 +197,19 @@ class Graphite_Description
 					$obj = $in_dangler;
 				}
 
-				$sparql = "$sparqlprefix $sub $pre $obj .";
+				$construct = "$sub $pre $obj . ";
+                $where = "$sparqlprefix $sub $pre $obj .";
 				if( isset( $routes["*"] ) )
 				{
-					$bits_from_routes = $this->_toSPARQL( $routes["*"], $suffix."_".$i, $out_dangler, "", $conbits );
+					$bits_from_routes = $this->_toSPARQL( $routes["*"], $suffix."_".$i, $out_dangler, "" );
 					$i++;
 					foreach( $bits_from_routes as $bit )
 					{
-						$sparql .= " OPTIONAL { $bit }";
+						$construct .= $bit["construct"];
+                        $where .= " OPTIONAL { ".$bit["where"]." }";
 					}
 				}
-				$unionbits []= $sparql;
-				$conbits []= "$sub $pre $obj";
+                $bits []= array( "where"=>$where, "construct"=>$construct );
 
 				foreach( $routes as $pred=>$route )
 				{
@@ -218,11 +217,11 @@ class Graphite_Description
 
 					$pre = "<".$this->graph->expandURI( $pred ).">";
 
-					$bits_from_routes = $this->_toSPARQL( $route, $suffix."_".$i, $out_dangler, "$sparqlprefix $sub $pre $obj .", $conbits );
+					$bits_from_routes = $this->_toSPARQL( $route, $suffix."_".$i, $out_dangler, "$sparqlprefix $sub $pre $obj ." );
 					$i++;
 					foreach( $bits_from_routes as $bit )
 					{
-						$unionbits []= $bit;
+						$bits []= $bit;
 					}
 				}
 			}
@@ -251,17 +250,18 @@ class Graphite_Description
 					$sparql = "$sparqlprefix $sub $pre $obj .";
 					foreach( $bits_from_routes as $bit )
 					{
-						$sparql .= " OPTIONAL { $bit }";
+                        $construct .= $bit["construct"];
+	
+                        $where .= " OPTIONAL { ".$bit["where"]." }";
 					}
 
-					$unionbits []= $sparql;
-					$conbits []= "$sub $pre $obj";
+					$bits []= array( "where"=>$where, "construct"=>$construct );
 
 				}
 			}
 		}
 
-		return $unionbits;
+		return $bits;
 	} # end _toSPARQL
 
 	function getFormats()
