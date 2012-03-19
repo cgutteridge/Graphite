@@ -437,9 +437,9 @@ rkJggg==
      */
 	public function ns( $short, $long )
 	{
-        if (empty($short)) {
-            throw new InvalidArgumentException("A valid xmlns prefix is required.");
-        }
+		if (empty($short)) {
+			throw new InvalidArgumentException("A valid xmlns prefix is required.");
+		}
 
 		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/i', $short ) )
 		{
