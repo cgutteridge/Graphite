@@ -9,6 +9,38 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
         $this->graph = new Graphite();
     }
 
+    public function testSetDebug() {
+        $this->assertFalse($this->graph->debug);
+
+        $this->graph->setDebug(true);
+
+        $this->assertTrue($this->graph->debug);
+    }
+
+    public function testLoaded() {
+        $this->assertFalse($this->graph->loaded(null));
+    }
+
+    public function testToArcTriples() {
+        $this->assertSame(array(), $this->graph->toArcTriples());
+    }
+
+    public function testResource() {
+        $resource = $this->graph->resource(null);
+
+        $this->assertTrue($resource instanceof Graphite_Resource);
+    }
+
+    public function testExpandURI() {
+        $this->assertSame('http://xmlns.com/foaf/0.1/knows', $this->graph->expandURI('foaf:knows'));
+    }
+
+    public function testShrinkURI() {
+        $this->assertSame("* This Document *", $this->graph->shrinkURI(null));
+
+        $this->assertSame('foaf:knows', $this->graph->shrinkURI('http://xmlns.com/foaf/0.1/knows'));
+    }
+
     public function test() {
         $this->markTestIncomplete('
 	public function __construct( $namespaces = array(), $uri = null )
@@ -16,7 +48,7 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
 	public static function thaw( $filename )
 	public static function __set_state($data) // As of PHP 5.1.0
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
-	public function setDebug( $boolean ) { $this->debug = $boolean; }
+
 	public function labelRelations( $new = null )
 	public function addLabelRelation( $addition )
 	public function mailtoIcon( $new = null )
