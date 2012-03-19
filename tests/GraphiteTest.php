@@ -42,14 +42,16 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException InvalidArgumentException Empty namespace 
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Empty namespace 
      */
     public function testNsRequiresValidInput() {
         $this->graph->ns(null, null);
     }
    
     /**
-     * @expectedException InvalidArgumentException Setting a namespace called 'urn' is just asking for trouble. Abort.
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Setting a namespace called 'urn' is just asking for trouble. Abort.
      */
     public function testNsProbhitsRedefiningCoreNamespaces() {
         $this->graph->ns('urn', 'whee');
