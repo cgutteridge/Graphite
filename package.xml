@@ -10,8 +10,8 @@
   <email>cjg@ecs.soton.ac.uk</email>
   <active>yes</active>
  </lead>
- <date>2012-03-12</date>
- <time>22:55:01</time>
+ <date>2012-03-19</date>
+ <time>16:36:08</time>
  <version>
   <release>0.1.6</release>
   <api>0.1.6</api>
@@ -20,7 +20,7 @@
   <release>stable</release>
   <api>stable</api>
  </stability>
- <license uri="http://www.php.net/license">PHP License</license>
+ <license uri="http://www.gnu.org/licenses/lgpl.html">LGPL</license>
  <notes>
 Misc fixes
  </notes>
@@ -57,8 +57,8 @@ Misc fixes
     <release>stable</release>
     <api>stable</api>
    </stability>
-   <date>2012-03-12</date>
-   <license uri="http://www.php.net/license">PHP License</license>
+   <date>2012-03-19</date>
+   <license uri="http://www.gnu.org/licenses/lgpl.html">LGPL</license>
    <notes>
 Misc fixes
    </notes>
