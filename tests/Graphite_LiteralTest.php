@@ -12,7 +12,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     public function testNodeType() {
         $this->assertSame("#literal", $this->node->nodeType());
 
-        $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
+        $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("#fish", $this->node->nodeType());
     }
@@ -20,7 +20,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     public function test__toString() {
         $this->assertSame("", (string)$this->node);
 
-        $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
+        $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("hi", (string)$this->node);
     }
@@ -28,7 +28,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     public function testLink() {
         $this->assertSame(null, $this->node->link());
 
-        $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
+        $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("hi", $this->node->link());
     }
@@ -36,7 +36,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     public function testPrettyLink() {
         $this->assertSame(null, $this->node->prettyLink());
 
-        $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
+        $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("hi", $this->node->prettyLink());
     }
@@ -44,7 +44,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
 
     public function testDatatype() {
         $this->assertSame(null, $this->node->datatype());
-        $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
+        $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("#fish", $this->node->datatype());
     }
@@ -52,7 +52,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     public function testLanguage() {
         $this->assertSame(null, $this->node->language());
 
-        $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
+        $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("en-US", $this->node->language());
     }

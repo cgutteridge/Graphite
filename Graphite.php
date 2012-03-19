@@ -426,11 +426,22 @@ rkJggg==
 	}
 
     /**
+     * Register a namespace
+     *
+     * @param string $short Must be a valid xmlns prefix. urn, http, doi, https, ftp, mail, xmlns, file and data are reserved.
+     * @param string $long  Must be either a valid URI or an empty string.
+     *
+     * @todo URI validation.
+     * @see http://www.w3.org/TR/REC-xml-names/#ns-decl
      * @throws InvalidArgumentException
      */
 	public function ns( $short, $long )
 	{
-		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/', $short ) )
+        if (empty($short)) {
+            throw new InvalidArgumentException("A valid xmlns prefix is required.");
+        }
+
+		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/i', $short ) )
 		{
 			throw new InvalidArgumentException("Setting a namespace called '$short' is just asking for trouble. Abort.");
 		}

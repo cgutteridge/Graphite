@@ -43,12 +43,12 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Empty namespace 
+     * @expectedExceptionMessage A valid xmlns prefix is required. 
      */
-    public function testNsRequiresValidInput() {
+    public function testNsRequiresValidInput1() {
         $this->graph->ns(null, null);
     }
-   
+
     /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Setting a namespace called 'urn' is just asking for trouble. Abort.
