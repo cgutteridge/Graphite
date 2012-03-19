@@ -26,7 +26,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testLink() {
-        $this->assertSame("", $this->node->link());
+        $this->assertSame(null, $this->node->link());
 
         $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
 
@@ -34,7 +34,7 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testPrettyLink() {
-        $this->assertSame("", $this->node->prettyLink());
+        $this->assertSame(null, $this->node->prettyLink());
 
         $this->node->triple = array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US');
 
@@ -57,15 +57,15 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
         $this->assertSame("en-US", $this->node->language());
     }
 
-    public function test() {
-        $this->markTestIncomplete('
-	        function dumpValueText()
-            function dumpValueHTML()
-	        function dumpValue()
+    public function testDumpValue() {
+        $this->assertSame("<span style='color:blue'>\"\"</span>", $this->node->dumpValue());
+    }
 
+    public function testDumpValueText() {
+        $this->assertSame('""', $this->node->dumpValueText());
+    }
 
-	        function link() { return $this->__toString(); }
-	        function prettyLink() { return $this->__toString(); }'
-        );
+    public function testDumpValueHTML() {
+        $this->assertSame('""', $this->node->dumpValueHTML());
     }
 }
