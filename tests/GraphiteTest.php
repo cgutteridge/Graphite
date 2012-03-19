@@ -41,6 +41,23 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
         $this->assertSame('foaf:knows', $this->graph->shrinkURI('http://xmlns.com/foaf/0.1/knows'));
     }
 
+    /** @expectedException InvalidArgumentException */
+    public function testNs1() {
+        $this->graph->ns(null, null);
+    }
+   
+    /** @expectedException InvalidArgumentException */
+    public function testNs2() {
+        $this->graph->ns('urn', 'whee');
+    }
+
+
+    public function testNs3() {
+        $this->graph->ns('fish', 'pants');
+
+        $this->assertContains('pants', $this->graph->ns);
+    }
+
     public function test() {
         $this->markTestIncomplete('
 	public function __construct( $namespaces = array(), $uri = null )

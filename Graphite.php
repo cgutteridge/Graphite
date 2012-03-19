@@ -424,6 +424,9 @@ rkJggg==
 		return $this->resource( $uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
+    /**
+     * @throws InvalidArgumentException
+     */
 	public function ns( $short, $long )
 	{
 		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/', $short ) )
