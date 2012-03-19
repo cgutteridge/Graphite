@@ -526,7 +526,7 @@ rkJggg==
 
 class Graphite_Node
 {
-	function __construct( $g )
+	function __construct(Graphite $g )
 	{
 		$this->g = $g;
 	}
@@ -582,7 +582,7 @@ class Graphite_Null extends Graphite_Node
 }
 class Graphite_Literal extends Graphite_Node
 {
-	function __construct( $g, $triple )
+	function __construct(Graphite $g, $triple )
 	{
 		$this->g = $g;
 		$this->triple = $triple;
@@ -648,7 +648,7 @@ class Graphite_Literal extends Graphite_Node
 
 class Graphite_Resource extends Graphite_Node
 {
-	function __construct( $g, $uri )
+	function __construct(Graphite $g, $uri )
 	{
 		$this->g = $g;
 		$this->g->forceString( $uri );
@@ -1083,7 +1083,7 @@ class Graphite_InverseRelation extends Graphite_Relation
 class Graphite_ResourceList extends ArrayIterator
 {
 
-	function __construct( $g, $a=array() )
+	function __construct(Graphite $g, $a=array() )
 	{
 		$this->g = $g;
 		$this->a = $a;

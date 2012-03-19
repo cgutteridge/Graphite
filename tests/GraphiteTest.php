@@ -48,13 +48,11 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
 	public static function thaw( $filename )
 	public static function __set_state($data) // As of PHP 5.1.0
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
-
 	public function labelRelations( $new = null )
 	public function addLabelRelation( $addition )
 	public function mailtoIcon( $new = null )
 	public function telIcon( $new = null )
 	function removeFragment( $uri )
-	function loaded( $uri )
 	public function load( $uri, $aliases = array(), $map = array() )
 	function loadSPARQL( $endpoint, $query )
 	function addTurtle( $base, $data )
@@ -68,10 +66,7 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
 	public function cleanURI( $uri )
 	public function primaryTopic( $uri = null )
 	public function ns( $short, $long )
-	public function resource( $uri )
 	public function allOfType( $uri )
-	public function shrinkURI( $uri )
-	public function expandURI( $uri )
 	public function allSubjects()
 	public function allObjects()
 	public function dump( $options=array() )

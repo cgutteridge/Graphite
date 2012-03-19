@@ -6,7 +6,7 @@ require_once 'PHPUnit/Framework/TestCase.php';
 class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
 
     public function setUp() {
-        $this->node = new Graphite_Literal(null, null);
+        $this->node = new Graphite_Literal(new Graphite(), null);
     }
 
     public function testNodeType() {
