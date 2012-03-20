@@ -12,7 +12,7 @@
         <os family="windows"/>
     </condition>
 
-	<condition property="docblox.bin" value="docblox.bat" else="docblox">
+	<condition property="phpdoc.bin" value="phpdoc.bat" else="phpdoc">
         <os family="windows"/>
     </condition>
 
@@ -76,8 +76,8 @@
 	  </apply>
 	 </target>
 
-	<target name="docblox" description="Generate API documentation using docblox">
-	  <exec executable="${docblox.bin}">
+	<target name="phpdoc" description="Generate API documentation using docblox">
+	  <exec executable="${phpdoc.bin}">
 		<arg line="project:run
 				   -d .
 				   -t ${basedir}/build/api" />
@@ -88,5 +88,5 @@
 	  <exec executable="phpdox"/>
 	 </target>
 
-	<target name="build" depends="clean,lint,phpunit,phpcs-ci,docblox,package"/>
+	<target name="build" depends="clean,lint,phpdoc,phpunit,phpcs-ci,package"/>
 </project>
