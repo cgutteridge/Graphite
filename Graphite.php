@@ -20,6 +20,7 @@
 # todo:
 # hasRelationValue, hasRelation, filter
 
+require_once 'ARC2.php';
 
 class Graphite
 {
