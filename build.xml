@@ -12,6 +12,10 @@
         <os family="windows"/>
     </condition>
 
+	<condition property="docblox.bin" value="docblox.bat" else="docblox">
+        <os family="windows"/>
+    </condition>
+
 	<target name="clean" description="Clean up and create artifact directories">
 		<delete dir="${basedir}/lib" />
 		<delete dir="${basedir}/build/api"/>
@@ -72,10 +76,17 @@
 	  </apply>
 	 </target>
 
+	<target name="docblox" description="Generate API documentation using docblox">
+	  <exec executable="${docblox.bin}">
+		<arg line="project:run
+				   -d .
+				   -t ${basedir}/build/api" />
+	  </exec>
+	</target>
 	 <target name="phpdox"
 			 description="Generate API documentation using phpDox">
 	  <exec executable="phpdox"/>
 	 </target>
 
-	<target name="build" depends="clean,lint,phpunit,phpcs-ci,phpdox,package"/>
+	<target name="build" depends="clean,lint,phpunit,phpcs-ci,docblox,package"/>
 </project>
