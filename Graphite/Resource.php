@@ -400,7 +400,9 @@ class Graphite_Resource extends Graphite_Node
 		return $r;
 	}
 
-	function __toString() { return $this->uri; }
+	function __toString() {
+        return !empty($this->uri) ? (string)$this->uri : "";
+    }
 	function dumpValue($options=array())
 	{
 		$label = $this->dumpValueText();
