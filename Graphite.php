@@ -23,6 +23,10 @@
 
 class Graphite
 {
+
+	/**
+	 * Create a new instance of Graphite. @see ns() for how to specify a namespace map and a list of pre-declared namespaces.
+	 */
 	public function __construct( $namespaces = array(), $uri = null )
 	{
 		$this->workAround4StoreBNodeBug = false;
@@ -49,7 +53,7 @@ class Graphite
 		$this->loaded = array();
 		$this->debug = false;
 
-		$this->labelRelations = array( 
+		$this->labelRelations = array(
 			"skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" );
 		$this->mailtoIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAIAAAAvJUALAAAABGdBTUEAALGPC/xhBQAAAAlwSFlz
 AAALEwAACxMBAJqcGAAAAAd0SU1FB9wCAhEsArM6LtoAAAF/SURBVBjTfZFNTxNhFIXf985QypTA
@@ -87,6 +91,9 @@ rkJggg==
 		$this->bnodeprefix = 0;
 	}
 
+	/**
+	 * Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. <a href='https://github.com/cgutteridge/Graphite/blob/master/examples/freeze.php'>This example</a> is a command line script you can modify to load and freeze a graph.
+	 */
 	public function freeze( $filename )
 	{
 		$fh = fopen($filename, 'w') or die("can't open file");
@@ -94,6 +101,9 @@ rkJggg==
 		fclose($fh);
 	}
 
+	/**
+	 * Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. <a href='https://github.com/cgutteridge/Graphite/blob/master/examples/freeze.php'>This example</a> is a command line script you can modify to load and freeze a graph.
+	 */
 	public static function thaw( $filename )
 	{
 		return unserialize( join( "", file( $filename )));
@@ -110,6 +120,10 @@ rkJggg==
 		$graph->t = $data["t"];
 		return $graph;
 	}
+
+	/**
+	 * $dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.
+	 */
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
 	{
 		$error = "";
@@ -128,17 +142,27 @@ rkJggg==
 
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
 
+	/**
+	 * Return a list of the relations currently used for $resource->label(), if called with a parameter then this should be an array to <strong>replace</strong> the current list. To just add additonal relation types to use as labels, use addLabelRelation($relation).
+	 */
 	public function labelRelations( $new = null )
 	{
 		$lr = $this->labelRelations;
 		if( isset( $new ) ) { $this->labelRelations = $new; }
 		return $lr;
 	}
+
+	/**
+	 * Return a list of the relations currently used for $resource->label(), if called with a parameter then this should be an array to <strong>replace</strong> the current list. To just add additonal relation types to use as labels, use addLabelRelation($relation).
+	 */
 	public function addLabelRelation( $addition )
 	{
 		$this->labelRelations []= $addition;
 	}
 
+	/**
+	 * Get or set the URL of the icon used for mailto: and tel: links in prettyLink(). If set to an empty string then no icon will be shown.
+	 */
 	public function mailtoIcon( $new = null )
 	{
 		$icon = $this->mailtoIcon;
@@ -146,6 +170,9 @@ rkJggg==
 		return $icon;
 	}
 
+	/**
+	 * Get or set the URL of the icon used for mailto: and tel: links in prettyLink(). If set to an empty string then no icon will be shown.
+	 */
 	public function telIcon( $new = null )
 	{
 		$icon = $this->telIcon;
@@ -167,6 +194,9 @@ rkJggg==
 		return $this->loaded[$this->removeFragment( $uri )];
 	}
 
+	/**
+	 * Load the RDF from the given URI or URL. Return the number of triples loaded.
+	 */
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
 		$this->forceString( $uri );
@@ -281,11 +311,17 @@ rkJggg==
 		return $this->loaded( $uri );
 	}
 
+	/**
+	 * This uses one or more SPARQL queries to the given endpoint to get all the triples required for the description. The return value is the total number of triples added to the graph.
+	 */
 	function loadSPARQL( $endpoint, $query )
 	{
 		return $this->load( $endpoint."?query=".urlencode($query) );
 	}
 
+	/**
+	 * Take a base URI and a string of turtle RDF and load the new triples into the graph. Return the number of triples loaded.
+	 */
 	function addTurtle( $base, $data )
 	{
 		$parser = ARC2::getTurtleParser();
@@ -303,6 +339,12 @@ rkJggg==
 		}
 		return $this->addTriples( $parser->getTriples() );
 	}
+
+	/**
+	 * As for addTurtle but load a string of RDF XML
+	 *
+	 * @see addTurtle
+	 */
 	function addRDFXML( $base, $data )
 	{
 		$parser = ARC2::getRDFXMLParser();
@@ -321,20 +363,31 @@ rkJggg==
 		return $this->addTriples( $parser->getTriples() );
 	}
 
-	function addBnodePrefix( $uri ) 
+	/**
+	 * Replace bnodes shorthand with configured bnodeprefix in URI
+	 *
+	 * @param string $uri
+	 */
+	function addBnodePrefix( $uri )
 	{
 		return preg_replace( "/^_:/", "_:g" . $this->bnodeprefix . "-", $uri );
 	}
 
+	/**
+	 * Add triples to the graph from an ARC2 datastrcture. This is the inverse of toArcTriples.
+	 *
+	 * @see ARC2
+	 * @see toArcTriples
+	 */
 	function addTriples( $triples, $aliases = array(), $map = array() )
 	{
 		$this->bnodeprefix++;
 
 		foreach( $triples as $t )
 		{
-			if( $this->workAround4StoreBNodeBug ) 
+			if( $this->workAround4StoreBNodeBug )
 			{
-				if( $t["s"] == "_:NULL" || $t["o"] == "_:NULL" ) { continue; } 
+				if( $t["s"] == "_:NULL" || $t["o"] == "_:NULL" ) { continue; }
 			}
 			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
@@ -351,6 +404,11 @@ rkJggg==
 		return sizeof( $triples );
 	}
 
+	/**
+	 * Add a single triple directly to the graph. Only addCompressedTriple accepts shortended URIs, eg foaf:name.
+	 *
+	 * @see addTriple
+	 */
 	function addCompressedTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
 		$s = $this->expandURI( $s );
@@ -363,11 +421,16 @@ rkJggg==
 		$this->addTriple( $s,$p,$o,$o_datatype,$o_lang,$aliases );
 	}
 
+	/**
+	 * Add a single triple directly to the graph.
+	 *
+	 * @see addCompressedTriple
+	 */
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
 		if( $this->workAround4StoreBNodeBug )
 		{
-			if( $s == "_:NULL" || $o == "_:NULL" ) { return; } 
+			if( $s == "_:NULL" || $o == "_:NULL" ) { return; }
 		}
 		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
 		if( !isset($o_datatype) || $o_datatype == "" )
@@ -394,6 +457,9 @@ rkJggg==
 		$this->t["op"][$o][$p][] = $s;
 	}
 
+	/**
+	 * Returns all triples of which this resource is the subject in Arc2's internal triples format.
+	 */
 	public function toArcTriples()
 	{
 		$arcTriples = array();
@@ -404,6 +470,9 @@ rkJggg==
 		return $arcTriples;
 	}
 
+	/**
+	 * Returns the serialization of the entire RDF graph in memory using one of Arc2's serializers. By default the RDF/XML serializer is used, but others (try passing "Turtle" or "NTriples") can be used - see the Arc2 documentation.
+	 */
 	public function serialize( $type = "RDFXML" )
 	{
 		$serializer = ARC2::getSer( $type, array( "ns" => $this->ns ) );
@@ -416,6 +485,9 @@ rkJggg==
 		return preg_replace( '/^(https?:\/\/[^:\/]+):80\//','$1/', $uri );
 	}
 
+	/**
+	 * Utility method (shamelessly ripped off from EasyRDF). Returns the primary topic of the first URL that was loaded. Handy when working with FOAF.
+	 */
 	public function primaryTopic( $uri = null )
 	{
 		if( !$uri ) { $uri = $this->firstGraphURI; }
@@ -425,16 +497,16 @@ rkJggg==
 		return $this->resource( $uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
-    /**
-     * Register a namespace
-     *
-     * @param string $short Must be a valid xmlns prefix. urn, http, doi, https, ftp, mail, xmlns, file and data are reserved.
-     * @param string $long  Must be either a valid URI or an empty string.
-     *
-     * @todo URI validation.
-     * @see http://www.w3.org/TR/REC-xml-names/#ns-decl
-     * @throws InvalidArgumentException
-     */
+	/**
+	 * Add an additional namespace alias to the Graphite instance.
+	 *
+	 * @param string $short Must be a valid xmlns prefix. urn, http, doi, https, ftp, mail, xmlns, file and data are reserved.
+	 * @param string $long  Must be either a valid URI or an empty string.
+	 *
+	 * @todo URI validation.
+	 * @see http://www.w3.org/TR/REC-xml-names/#ns-decl
+	 * @throws InvalidArgumentException
+	 */
 	public function ns( $short, $long )
 	{
 		if (empty($short)) {
@@ -448,6 +520,11 @@ rkJggg==
 		$this->ns[$short] = $long;
 	}
 
+	/**
+	 * Get the resource with given URI. $uri may be abbreviated to "namespace:value".
+	 *
+	 * @return Graphite_Resource
+	 */
 	public function resource( $uri )
 	{
 		$this->forceString( $uri );
@@ -455,11 +532,18 @@ rkJggg==
 		return new Graphite_Resource( $this, $uri );
 	}
 
+	/**
+	 * Return a list of all resources loaded, with the rdf:type given. eg. $graph-&gt;allOfType( "foaf:Person" )
+	 */
 	public function allOfType( $uri )
 	{
 		return $this->resource( $uri )->all("-rdf:type");
 	}
 
+	/**
+	 * Translate a URI from the long form to any shorthand version known.
+	 * IE: http://xmlns.com/foaf/0.1/knows => foaf:knows
+	 */
 	public function shrinkURI( $uri )
 	{
 		$this->forceString( $uri );
@@ -474,6 +558,10 @@ rkJggg==
 		return $uri;
 	}
 
+	/**
+	 * Translate a URI from the short form to any long version known.
+	 * IE:  foaf:knows => http://xmlns.com/foaf/0.1/knows
+	 */
 	public function expandURI( $uri )
 	{
 		$this->forceString( $uri );
@@ -488,7 +576,9 @@ rkJggg==
 		return $uri;
 	}
 
-
+	/**
+	 * Return a list of all resources in the graph which are the subject of at least one triple.
+	 */
 	public function allSubjects()
 	{
 		$r = new Graphite_ResourceList( $this );
@@ -499,6 +589,9 @@ rkJggg==
 		return $r;
 	}
 
+	/**
+	 * Return a list of all resources in the graph which are the object of at least one triple.
+	 */
 	public function allObjects()
 	{
 		$r = new Graphite_ResourceList( $this );
@@ -509,6 +602,15 @@ rkJggg==
 		return $r;
 	}
 
+	/**
+	 * Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something.
+	 *
+	 * $options is an optional array of flags to modify how dump() renders HTML. dumpText() does the same think with ASCII indention instead of HTML markup, and is intended for debugging command-line scripts.
+	 *
+	 * "label"=> 1 - add a label for the URI, and the rdf:type, to the top of each resource box, if the information is in the current graph.
+	 * "labeluris"=> 1 - when listing the resources to which this URI relates, show them as a label, if possible, rather than a URI. Hovering the mouse will still show the URI.</div>
+	 * "internallinks"=> 1 - instead of linking directly to the URI, link to that resource's dump on the current page (which may or may not be present). This can, for example, make bnode nests easier to figure out.
+	 */
 	public function dump( $options=array() )
 	{
 		$r = array();
@@ -520,6 +622,9 @@ rkJggg==
 		return join("",$r );
 	}
 
+	/**
+	 * @see dump()
+	 */
 	public function dumpText( $options=array() )
 	{
 		$r = array();
