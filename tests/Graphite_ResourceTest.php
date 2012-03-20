@@ -32,10 +32,6 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
 	public function isType( /* List */ )
 	public function hasLabel()
 	public function label()
-	public function link()
-	public function prettyLink()
-	public function dumpText()
-	public function dump( $options = array() )
 	function __toString() { return $this->uri; }
 	function dumpValue($options=array())
 	function dumpValueText() { return $this->g->shrinkURI( $this->uri ); }
@@ -55,17 +51,17 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testDumpValueText() {
-        $this->assertSame("", $this->resource->dumpValueText());
+        $this->assertSame("* This Document *", $this->resource->dumpValueText());
     }
 
     public function testDumpValue() {
-        $this->assertSame("<a href='' title='' style='text-decoration:none;color:red'></a>", $this->resource->dumpValue());
+        $this->assertSame("<a href='' title='' style='text-decoration:none;color:red'>* This Document *</a>", $this->resource->dumpValue());
 
         $this->resource->uri = 'http://whee.com';
 
-        $this->assertSame("<a href='http://whee.com' title='http://whee.com' style='text-decoration:none;color:red'></a>", $this->resource->dumpValue());
+        $this->assertSame("<a href='http://whee.com' title='http://whee.com' style='text-decoration:none;color:red'>http://whee.com</a>", $this->resource->dumpValue());
 
-        $this->assertSame("<a href='#http://whee.com' title='http://whee.com' style='text-decoration:none;color:red'></a>", $this->resource->dumpValue(array('internallinks' => true)));
+        $this->assertSame("<a href='#http://whee.com' title='http://whee.com' style='text-decoration:none;color:red'>http://whee.com</a>", $this->resource->dumpValue(array('internallinks' => true)));
     }
 
     public function testNodeType() {
@@ -78,14 +74,14 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testDump() {
-        $this->assertSame("", $this->resource->dump());
+        $this->assertSame("<a name=''></a>", $this->resource->dump());
         $this->assertSame("", $this->resource->dump(array('label' => true)));
 
         $this->markTestIncomplete("Needs further coverage");
     }
 
     public function testDumpText() {
-        $this->assertSame("", $this->resource->dumpText());
+        $this->assertSame("* This Document *\n   .\n", $this->resource->dumpText());
 
         $this->markTestIncomplete("Needs further coverage");
     }
@@ -98,13 +94,13 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
 
 
     public function testLink() {
-        $this->assertSame(null, $this->resource->link());
+        $this->assertSame("<a title='' href=''></a>", $this->resource->link());
 
         $this->markTestIncomplete("Needs further coverage");
     }
 
     public function testLabel() {
-        $this->assertSame(null, $this->resource->label());
+        $this->assertSame("", $this->resource->label());
 
         $this->markTestIncomplete("Needs further coverage");
     }
