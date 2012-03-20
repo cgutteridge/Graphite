@@ -29,7 +29,7 @@ class Graphite_Resource extends Graphite_Node
 		if( sizeof( $l ) == 0 ) { return; }
 		return $l[0]->toString();
 	}
-	# getString deprecated in favour of getLiteral 
+	# getString deprecated in favour of getLiteral
 	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
 
 	public function getDatatype( /* List */ )
@@ -303,10 +303,10 @@ class Graphite_Resource extends Graphite_Node
 			$iconURL = $this->g->telIcon();
 			if( $iconURL != "" );
 			{
-				$icon = 
+				$icon =
 "<a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='$iconURL' /></a>";
 			}
-			return 
+			return
 "<span style='white-space:nowrap'>$icon<a title='".$this->uri."' href='".$this->uri."'>$label</a></span>";
 
 			# icon adapted from cc-by icon at http://pc.de/icons/
@@ -320,13 +320,13 @@ class Graphite_Resource extends Graphite_Node
 			$iconURL = $this->g->mailtoIcon();
 			if( $iconURL != "" );
 			{
-				$icon = 
+				$icon =
 "<a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='$iconURL' /></a>";
 			}
-			return 
+			return
 "<span style='white-space:nowrap'>$icon<a title='".$this->uri."' href='".$this->uri."'>$label</a></span>";
 			# icon adapted from cc-by icon at http://pc.de/icons/
-		} 
+		}
 
 		$label = $this->uri;
 		if( $this->hasLabel() ) { $label = $this->label(); }

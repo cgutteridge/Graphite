@@ -24,8 +24,8 @@ class Graphite_Node
 	function nodeType() { return "#node"; }
 	function __toString() { return "[NULL]"; }
 	function toString() { return $this->__toString(); }
-	function datatype() { return null; } 
-	function language() { return null; } 
+	function datatype() { return null; }
+	function language() { return null; }
 
 
 	protected function parsePropertyArg( $arg )

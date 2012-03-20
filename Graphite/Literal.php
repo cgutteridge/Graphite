@@ -10,15 +10,15 @@ class Graphite_Literal extends Graphite_Node
 	/**
 	 * Modify the triple / value represented by this instance
 	 *
-	 * @param array $triple 
+	 * @param array $triple
 	 */
 	public function setTriple($triple) {
 		$this->triple = $triple;
 		$this->v = $triple["v"];
 	}
 
-	function __toString() { 
-		return !empty($this->triple["v"]) ? (string)$this->triple['v'] : ""; 
+	function __toString() {
+		return !empty($this->triple["v"]) ? (string)$this->triple['v'] : "";
 	}
 	function datatype() { return @$this->triple["d"]; }
 	function language() { return @$this->triple["l"]; }
