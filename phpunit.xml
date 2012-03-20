@@ -18,6 +18,6 @@
 		</testsuite>
 	</testsuites>
 	<php>
-		<includePath>lib/</includePath>
+		<includePath>lib/ARC2/</includePath>
 	</php>
 </phpunit>
