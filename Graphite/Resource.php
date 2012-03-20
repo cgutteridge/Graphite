@@ -422,4 +422,26 @@ class Graphite_Resource extends Graphite_Node
 	{
 		return new Graphite_Description( $this );
 	}
+
+	protected function parsePropertyArg( $arg )
+	{
+		if( is_a( $arg, "Graphite_Resource" ) )
+		{
+			if( is_a( $arg, "Graphite_InverseRelation" ) )
+			{
+				$this->g->forceString( $arg );
+				return array( "op", "$arg" );
+			}
+			$this->g->forceString( $arg );
+			return array( "sp", "$arg" );
+		}
+
+		$set = "sp";
+		if( substr( $arg,0,1) == "-" )
+		{
+			$set = "op";
+			$arg = substr($arg,1);
+		}
+		return array( $set, $this->g->expandURI( "$arg" ) );
+	}
 }
