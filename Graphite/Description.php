@@ -16,7 +16,7 @@ class Graphite_Description
 	function __construct( $resource )
 	{
 		$this->graph = $resource->g;
-		$this->resource = $resource;	
+		$this->resource = $resource;
 	}
 
 	function addRoute( $route )
@@ -28,9 +28,9 @@ class Graphite_Description
 		{
 			$dir = "+";
 			if( substr($pred,0,1) == "-" ) { $pred = substr($pred,1); $dir = "-"; }
-			if( !isset( $treeptr[$dir][$pred] ) ) 
+			if( !isset( $treeptr[$dir][$pred] ) )
 			{
-				$treeptr[$dir][$pred] = array( "+" => array(), "-" => array() ); 
+				$treeptr[$dir][$pred] = array( "+" => array(), "-" => array() );
 			}
 			$treeptr = &$treeptr[$dir][$pred];
 		}
@@ -59,10 +59,10 @@ class Graphite_Description
 			$code = $this->graph->shrinkURI( $relation );
 			$jsonkey = $code;
 			$dir = "+";
-			if( $relation->nodeType() == "#inverseRelation" ) 
-			{ 
-				$dir = "-"; 
-				$jsonkey = "$jsonkey of"; 
+			if( $relation->nodeType() == "#inverseRelation" )
+			{
+				$dir = "-";
+				$jsonkey = "$jsonkey of";
 			}
 			if( !isset($tree[$dir]["*"]) && !isset($tree[$dir][$code]) ) { continue; }
 
@@ -73,7 +73,7 @@ class Graphite_Description
 					$json[$jsonkey][] = $value->toString();
 				}
 				else
-				{	
+				{
 					$subjson = array();
 					$uri = $value->toString();
 					if( substr( $uri,0,2 ) != "_:" ) { $subjson["_uri"] = $uri; }
@@ -104,9 +104,9 @@ class Graphite_Description
 		{
 			$code = $this->graph->shrinkURI( $relation );
 			$dir = "+";
-			if( $relation->nodeType() == "#inverseRelation" ) 
-			{ 
-				$dir = "-"; 
+			if( $relation->nodeType() == "#inverseRelation" )
+			{
+				$dir = "-";
 			}
 
 			if( !isset($tree[$dir]["*"]) && !isset($tree[$dir][$code]) ) { continue; }
@@ -115,7 +115,7 @@ class Graphite_Description
 			{
 				if( is_a( $value, "Graphite_Literal" ) )
 				{
-					$new_graph->addTriple( 
+					$new_graph->addTriple(
 						$resource->toString(),
 						$relation->toString(),
 						$value->toString(),
@@ -123,7 +123,7 @@ class Graphite_Description
 						$value->language() );
 				}
 				else
-				{	
+				{
 					if( isset( $tree[$dir][$code]) )
 					{
 						$this->_tograph( $tree[$dir][$code], $value, $new_graph );
@@ -134,14 +134,14 @@ class Graphite_Description
 					}
 					if( $dir == "+" )
 					{
-						$new_graph->addTriple( 
+						$new_graph->addTriple(
 							$resource->toString(),
 							$relation->toString(),
 							$value->toString() );
 					}
 					else
 					{
-						$new_graph->addTriple( 
+						$new_graph->addTriple(
 							$value->toString(),
 							$relation->toString(),
 							$resource->toString() );
@@ -158,7 +158,7 @@ class Graphite_Description
 		foreach( $bits as $bit )
 		{
 			$sparql = "CONSTRUCT { ".$bit['construct']." } WHERE { ".$bit['where']." }";
-			if( $debug || @$_GET["_graphite_debug"] ) { 
+			if( $debug || @$_GET["_graphite_debug"] ) {
 				 print "<div style='padding: 1em'><tt>\n\n".htmlspecialchars($sparql)."</tt></div>\n\n";
 			}
 			$n+=$this->graph->loadSPARQL( $endpoint, $sparql );
@@ -174,7 +174,7 @@ class Graphite_Description
 			$in_dangler = "<".$this->resource->toString().">";
 		}
 
-		$i = 0;	
+		$i = 0;
 		foreach( $tree as $dir=>$routes )
 		{
 			if( sizeof($routes) == 0 ) { continue; }
@@ -185,7 +185,7 @@ class Graphite_Description
 				$sub = "?s".$suffix."_".$i;
 				$pre = "?p".$suffix."_".$i;
 				$obj = "?o".$suffix."_".$i;
-	
+
 				if( $dir == "+" )
 				{
 					$out_dangler = $obj;
@@ -198,7 +198,7 @@ class Graphite_Description
 				}
 
 				$construct = "$sub $pre $obj . ";
-                $where = "$sparqlprefix $sub $pre $obj .";
+				$where = "$sparqlprefix $sub $pre $obj .";
 				if( isset( $routes["*"] ) )
 				{
 					$bits_from_routes = $this->_toSPARQL( $routes["*"], $suffix."_".$i, $out_dangler, "" );
@@ -206,10 +206,10 @@ class Graphite_Description
 					foreach( $bits_from_routes as $bit )
 					{
 						$construct .= $bit["construct"];
-                        $where .= " OPTIONAL { ".$bit["where"]." }";
+						$where .= " OPTIONAL { ".$bit["where"]." }";
 					}
 				}
-                $bits []= array( "where"=>$where, "construct"=>$construct );
+				$bits []= array( "where"=>$where, "construct"=>$construct );
 
 				foreach( $routes as $pred=>$route )
 				{
@@ -232,7 +232,7 @@ class Graphite_Description
 					$sub = "?s".$suffix."_".$i;
 					$pre = "<".$this->graph->expandURI( $pred ).">";
 					$obj = "?o".$suffix."_".$i;
-	
+
 					if( $dir == "+" )
 					{
 						$out_dangler = $obj;
@@ -250,9 +250,9 @@ class Graphite_Description
 					$sparql = "$sparqlprefix $sub $pre $obj .";
 					foreach( $bits_from_routes as $bit )
 					{
-                        $construct .= $bit["construct"];
-	
-                        $where .= " OPTIONAL { ".$bit["where"]." }";
+						$construct .= $bit["construct"];
+
+						$where .= " OPTIONAL { ".$bit["where"]." }";
 					}
 
 					$bits []= array( "where"=>$where, "construct"=>$construct );
