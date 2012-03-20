@@ -174,12 +174,44 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     public function testToArcTriples() {
         $this->assertSame(array(), $this->resource->toArcTriples());
 
-        $this->resource->g->addTriple(array('s' => 'http://my.com/dog#', 'p' => '#smells', 'o' => 'http://wikipedioa.org/Terribly#'));
+        $this->resource->g->addTriple('http://my.com/dog#', '#smells', 'http://wikipedioa.org/Terribly#');
 
-        $this->uri = 'http://my.com/dog#';
+        $this->resource->uri = 'http://my.com/dog#';
         $this->assertSame(array(), $this->resource->toArcTriples());
 
 
         $this->assertSame(array(), $this->resource->toArcTriples(true));
+    }
+
+    public function testRelations() {
+        $relations = $this->resource->relations();
+
+        $this->assertTrue($relations instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($relations));
+
+        $this->resource->g->addTriple('http://my.com/dog#', '#smells', 'http://wikipedioa.org/Terribly#');
+
+        $this->resource->uri = 'http://wikipedioa.org/Terribly#';
+
+        $relations = $this->resource->relations();
+        $this->assertTrue($relations instanceof Graphite_ResourceList);
+        $this->assertSame(1, count($relations));
+        $this->assertTrue($relations[0] instanceof Graphite_InverseRelation, get_class($relations[0]));
+
+        $this->resource->uri = 'http://my.com/dog#';
+        $relations = $this->resource->relations();
+        $this->assertTrue($relations instanceof Graphite_ResourceList);
+        $this->assertSame(1, count($relations));
+        $this->assertTrue($relations[0] instanceof Graphite_Relation, get_class($relations[0]));
+
+        $this->resource->g->addTriple('I', 'dislike', 'http://my.com/dog#');
+
+        $relations = $this->resource->relations();
+        $this->assertTrue($relations instanceof Graphite_ResourceList);
+        $this->assertSame(2, count($relations));
+        $this->assertTrue($relations[0] instanceof Graphite_Relation, get_class($relations[0]));
+        $this->assertTrue($relations[1] instanceof Graphite_InverseRelation, get_class($relations[1]));
+
+        $this->markTestIncomplete("Needs further coverage");
     }
 }
