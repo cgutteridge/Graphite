@@ -74,7 +74,7 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testDump() {
-        $this->assertSame("<a name=''></a>", $this->resource->dump());
+        $this->assertSame("<a name=''></a><div style='text-align:left;font-family: arial;", $this->resource->dump());
         $this->assertSame("", $this->resource->dump(array('label' => true)));
 
         $this->markTestIncomplete("Needs further coverage");
@@ -122,7 +122,10 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testTypes() {
-        $this->assertSame("", $this->resource->types());
+        $types = $this->resource->types();
+
+        $this->assertTrue($types instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($types));
 
         $this->markTestIncomplete("Needs further coverage");
     }
