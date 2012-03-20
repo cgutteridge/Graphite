@@ -33,15 +33,14 @@ To use: (see examples for more)
     print "<div>".$me->get( "foaf:mbox" )->prettyLink()."</div>";
     print "<div>".$me->get( "foaf:phone" )->prettyLink()."</div>";
 
+# Dev dependencies
+$ pear config-set auto_discover 1
+$ pear install pear.phpqatools.org/phpqatools pear.netpirates.net/phpDox
+$ pear install PEAR_PackageFileManager_Cli
 
-To test:
-$ pear channel-discover pear.phpunit.de
-$ pear install phpunit/phpunit
+# To test:
+$ ant phpunit
 
 To build/prepare a release:
-$ pear install PEAR_PackageFileManager_Cli
 $ pfm
-# Be sure to ignore the build dir from the generated package via pfm
-$ pear package
-
-
+$ ant
