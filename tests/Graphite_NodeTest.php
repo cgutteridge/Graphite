@@ -44,8 +44,26 @@ class Graphite_NodeTest extends  PHPUnit_Framework_TestCase {
         $this->assertSame(0, count($all));
     }
 
+    public function testTypes() {
+        $all = $this->node->types();
+
+        $this->assertTrue($all instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($all));
+    }
+
+    public function testRelations() {
+        $all = $this->node->relations();
+
+        $this->assertTrue($all instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($all));
+    }
+
     public function testLoad() {
         $this->assertSame(0, $this->node->load());
+    }
+
+    public function testLoadSameAs() {
+        $this->assertSame(0, $this->node->loadSameAs(null));
     }
 
     public function testLoadSameAsOrg() {
