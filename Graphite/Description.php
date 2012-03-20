@@ -244,19 +244,18 @@ class Graphite_Description
 						$obj = $in_dangler;
 					}
 
-					$bits_from_routes = $this->_toSPARQL( $routes[$pred],$suffix."_".$i, $out_dangler, "", $conbits );
+					$bits_from_routes = $this->_toSPARQL( $routes[$pred],$suffix."_".$i, $out_dangler, "" );
 					$i++;
 
-					$sparql = "$sparqlprefix $sub $pre $obj .";
+					$construct = "$sub $pre $obj . ";
+					$where = "$sparqlprefix $sub $pre $obj .";
 					foreach( $bits_from_routes as $bit )
 					{
 						$construct .= $bit["construct"];
-
 						$where .= " OPTIONAL { ".$bit["where"]." }";
 					}
 
 					$bits []= array( "where"=>$where, "construct"=>$construct );
-
 				}
 			}
 		}
