@@ -89,6 +89,19 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     public function testPrettyLink() {
         $this->assertSame("<a title='' href=''></a>", $this->resource->prettyLink());
 
+        $this->resource->uri = 'http://bob.com';
+        $this->assertSame("<a title='http://bob.com' href='http://bob.com'>http://bob.com</a>", $this->resource->prettyLink());
+
+        $this->resource->uri = 'tel:+61-0543-34534';
+        $this->resource->g->telIcon("http://example.com/BOB.jpg");
+        $phone_link = $this->resource->prettyLink();
+
+        $this->assertSame("<span style='white-space:nowrap'><a title='tel:+61-0543-34534' href='tel:+61-0543-34534'><img style='padding-right:0.2em;' src='http://example.com/BOB.jpg' /></a><a title='tel:+61-0543-34534' href='tel:+61-0543-34534'>+61-0543-34534</a></span>", $phone_link);
+
+        $this->resource->uri = 'mailto:you@example.com';
+        $this->resource->g->mailtoIcon("http://example.com/BOB.jpg");
+        $this->assertSame("<span style='white-space:nowrap'><a title='mailto:you@example.com' href='mailto:you@example.com'><img style='padding-right:0.2em;' src='http://example.com/BOB.jpg' /></a><a title='mailto:you@example.com' href='mailto:you@example.com'>you@example.com</a></span>", $this->resource->prettyLink());
+
         $this->markTestIncomplete("Needs further coverage");
     }
 
@@ -96,6 +109,9 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     public function testLink() {
         $this->assertSame("<a title='' href=''></a>", $this->resource->link());
 
+        $this->resource->uri = 'http://bob.com';
+
+        $this->assertSame("<a title='http://bob.com' href='http://bob.com'>http://bob.com</a>", $this->resource->link());
         $this->markTestIncomplete("Needs further coverage");
     }
 
