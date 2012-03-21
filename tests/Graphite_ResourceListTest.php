@@ -5,36 +5,88 @@ require_once 'PHPUnit/Framework/TestCase.php';
 
 class Graphite_ResourceListTest extends PHPUnit_Framework_TestCase {
 
-    public function test() {
-        $this->markTestIncomplete('
-	function __construct( $g, $a=array() )
-	function join( $str )
-	function dump()
-	public function duplicate()
-	public function sort( /* List */ )
-	public function uasort( $cmp )
-	public function get( /* List */ )
-	
-	public function getLiteral( /* List */)
-	# getString deprecated in favour of getLiteral 
-	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
+    public function setUp() {
+        $this->list = new Graphite_ResourceList(new Graphite());
+    }
 
-	public function label()
-	public function link() 
-	public function prettyLink() 
-	public function load()
-	public function allString( /* List */ )
+    public function testAllOfType() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
 
-	public function all( /* List */ )
-	function append( $x /* List */ )
+    public function testJoin() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
 
-	function distinct()
-	function union( /* List */ )
-	function intersection( /* List */ )
-	function except( /* List */ )
+    public function testDump() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
 
+    public function testDuplicate() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
 
-	function allOfType( $uri )
-    ');
-}
+    public function testSort() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testUasort() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testGet() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testGetLiteral() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testGetString() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testLabel() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testLink() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testPrettyLink() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testLoad() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testAllString() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testAll() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testAppend() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testDistinct() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testUnion() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testIntersection() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
+    public function testExcept() {
+        $this->markTestIncomplete("Not yet implemented");
+    }
+
 }
