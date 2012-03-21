@@ -11,8 +11,8 @@ class Graphite_Resource extends Graphite_Node
 	public function get( /* List */ )
 	{
 		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		$l = $this->all( $args );
 		if( sizeof( $l ) == 0 ) { return new Graphite_Null($this->g); }
@@ -22,8 +22,8 @@ class Graphite_Resource extends Graphite_Node
 	public function getLiteral( /* List */ )
 	{
 		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		$l = $this->all( $args );
 		if( sizeof( $l ) == 0 ) { return; }
@@ -35,8 +35,8 @@ class Graphite_Resource extends Graphite_Node
 	public function getDatatype( /* List */ )
 	{
 		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		$l = $this->all( $args );
 		if( sizeof( $l ) == 0 ) { return; }
@@ -45,8 +45,8 @@ class Graphite_Resource extends Graphite_Node
 	public function getLanguage( /* List */ )
 	{
 		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		$l = $this->all( $args );
 		if( sizeof( $l ) == 0 ) { return; }
@@ -56,8 +56,8 @@ class Graphite_Resource extends Graphite_Node
 	public function allString( /* List */ )
 	{
 		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		$l = array();
 		foreach( $this->all( $args ) as $item )
@@ -70,8 +70,8 @@ class Graphite_Resource extends Graphite_Node
 	public function has(  /* List */ )
 	{
 		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		foreach( $args as $arg )
 		{
@@ -93,8 +93,8 @@ class Graphite_Resource extends Graphite_Node
 			return new Graphite_ResourceList($this->g, array());
 		}
 
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 		$l = array();
 		$done = array();
 		foreach( $args as $arg )
@@ -277,11 +277,12 @@ class Graphite_Resource extends Graphite_Node
 			return false;
 		}
 
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
 		foreach( $this->allString( 'rdf:type' ) as $type )
 		{
+
 			foreach( $args as $arg )
 			{
 				$uri = $this->g->expandURI( $arg );
