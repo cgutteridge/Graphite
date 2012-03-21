@@ -6,23 +6,54 @@ require_once 'PHPUnit/Framework/TestCase.php';
 class Graphite_ResourceListTest extends PHPUnit_Framework_TestCase {
 
     public function setUp() {
-        $this->list = new Graphite_ResourceList(new Graphite());
+        $this->graph = new Graphite();
+        $this->list = new Graphite_ResourceList($this->graph);
     }
 
     public function testAllOfType() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->allOfType("");
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("I'm clearly misinterpetting how best to test this :/");
+/*
+        $this->graph->addCompressedTriple("http://foo.com", "rdf:type", "http://bar.com");
+        $this->graph->addCompressedTriple("http://foo.com", "foaf:knows", "http://me.com/");
+
+
+        $this->list->a[] = new Graphite_Resource($this->graph, 'http://foo.com');
+
+        $list = $this->list->allOfType("http://bar.com");
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(1, count($list));
+*/
     }
 
     public function testJoin() {
-        $this->markTestIncomplete("Not yet implemented");
+        $text = $this->list->join("fish");
+
+        $this->assertSame("", $text);
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testDump() {
-        $this->markTestIncomplete("Not yet implemented");
+        $text = $this->list->dump();
+
+        $this->assertSame("", $text);
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testDuplicate() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->duplicate();
+
+        $this->assertNotSame($list, $this->list);
+        $this->assertEquals($list, $this->list);
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testSort() {
@@ -34,59 +65,169 @@ class Graphite_ResourceListTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testGet() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->get();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testGetLiteral() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->getLiteral();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testGetString() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->getString();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testLabel() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->label();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testLink() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->link();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testPrettyLink() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->prettyLink();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testLoad() {
-        $this->markTestIncomplete("Not yet implemented");
+        $n = $this->list->load();
+
+        $this->assertSame(0, $n);
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testAllString() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->allString();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testAll() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->all();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+        $this->markTestIncomplete("Needs more coverage");
     }
 
     public function testAppend() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->append('fish');
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(1, count($list));
+        $this->assertContains('fish', $list);
+
+        $this->assertNotSame($list, $this->list);
+        $this->assertEquals(array('fish'), (array)$list);
+
+
+        $list = $this->list->append(array('dogs', 'cats'));
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(2, count($list));
+        $this->assertContains('dogs', $list);
+        $this->assertContains('cats', $list);
+        $this->assertEquals(array('dogs', 'cats'), (array)$list);
+
+        $this->assertNotSame($list, $this->list);
+
+
+
+        $list = $this->list->append(new Graphite_ResourceList($this->graph, array('dogs', 'cats', 'dogs')));
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(3, count($list));
+
+        $this->assertContains('dogs', $list);
+        $this->assertContains('cats', $list);
+
+        $this->assertEquals(array('dogs', 'cats', 'dogs'), (array)$list);
     }
 
     public function testDistinct() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list = $this->list->distinct();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(0, count($list));
+
+
+        $this->list->append(array('dogs', 'dogs', 'dogs'));
+
+        $list = $this->list->distinct();
+
+        $this->assertTrue($list instanceof Graphite_ResourceList);
+        $this->assertSame(1, count($list));
+
+        $this->assertEquals(array('dogs'), $list);
     }
 
     public function testUnion() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list1 = clone $this->list;
+        $list2 = clone $this->list;
+
+        $list1->append(array('dogs', 'dogs', 'dogs'));
+        $list2->append(array('cats', 'cats', 'cats'));
+
+        $list3 = $list1->union($list2);
+
+        $this->assertEquals(array('dogs', 'cats'), (array)$list3);
     }
 
     public function testIntersection() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list1 = clone $this->list;
+        $list2 = clone $this->list;
+
+        $list1->append(array('dogs', 'dogs', 'dogs'));
+        $list2->append(array('cats', 'dogs', 'cats'));
+
+        $list3 = $list1->intersection($list2);
+
+        $this->assertEquals(array('dogs'), (array)$list3);
     }
 
     public function testExcept() {
-        $this->markTestIncomplete("Not yet implemented");
+        $list1 = clone $this->list;
+        $list2 = clone $this->list;
+
+        $list1->append(array('cats', 'dogs', 'cats'));
+        $list2->append(array('dogs', 'dogs', 'dogs'));
+
+        $list3 = $list1->except($list2);
+        $this->assertEquals(array('cats'), (array)$list3);
     }
 
 }
