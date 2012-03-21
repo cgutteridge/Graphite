@@ -185,22 +185,19 @@ class Graphite_ResourceListTest extends PHPUnit_Framework_TestCase {
         $this->assertSame(0, count($list));
 
 
-        $this->list->append(array('dogs', 'dogs', 'dogs'));
+        $this->list = $this->list->append(array('dogs', 'dogs', 'dogs'));
 
         $list = $this->list->distinct();
 
         $this->assertTrue($list instanceof Graphite_ResourceList);
         $this->assertSame(1, count($list));
 
-        $this->assertEquals(array('dogs'), $list);
+        $this->assertEquals(array('dogs'), (array)$list);
     }
 
     public function testUnion() {
-        $list1 = clone $this->list;
-        $list2 = clone $this->list;
-
-        $list1->append(array('dogs', 'dogs', 'dogs'));
-        $list2->append(array('cats', 'cats', 'cats'));
+        $list1 = $this->list->append(array('dogs', 'dogs', 'dogs'));
+        $list2 = $this->list->append(array('cats', 'cats', 'cats'));
 
         $list3 = $list1->union($list2);
 
@@ -208,11 +205,8 @@ class Graphite_ResourceListTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testIntersection() {
-        $list1 = clone $this->list;
-        $list2 = clone $this->list;
-
-        $list1->append(array('dogs', 'dogs', 'dogs'));
-        $list2->append(array('cats', 'dogs', 'cats'));
+        $list1 = $this->list->append(array('dogs', 'dogs', 'dogs'));
+        $list2 = $this->list->append(array('cats', 'dogs', 'cats'));
 
         $list3 = $list1->intersection($list2);
 
@@ -220,14 +214,15 @@ class Graphite_ResourceListTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testExcept() {
-        $list1 = clone $this->list;
-        $list2 = clone $this->list;
-
-        $list1->append(array('cats', 'dogs', 'cats'));
-        $list2->append(array('dogs', 'dogs', 'dogs'));
+        $list1 = $this->list->append(array('cats', 'dogs', 'cats'));
+        $list2 = $this->list->append(array('dogs', 'dogs', 'dogs'));
 
         $list3 = $list1->except($list2);
-        $this->assertEquals(array('cats'), (array)$list3);
+
+        $this->assertEquals(array(new Graphite_Resource($this->graph, 'cats'),
+                                  new Graphite_Resource($this->graph, 'cats')),
+            (array)$list3
+        );
     }
 
 }
