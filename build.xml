@@ -76,11 +76,9 @@
 	  </apply>
 	 </target>
 
-	<target name="phpdoc" description="Generate API documentation using docblox">
+	<target name="phpdoc" description="Generate API documentation using phpdoc">
 	  <exec executable="${phpdoc.bin}">
-		<arg line="project:run
-				   -d .
-				   -t ${basedir}/build/api" />
+		<arg line="project:run -c phpdoc.dist.xml" />
 	  </exec>
 	</target>
 	 <target name="phpdox"
