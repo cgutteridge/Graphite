@@ -88,6 +88,11 @@ class Graphite_Resource extends Graphite_Node
 	public function all(  /* List */ )
 	{
 		$args = func_get_args();
+
+		if (empty($args)) {
+			return new Graphite_ResourceList($this->g, array());
+		}
+
 		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
 		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 		$l = array();
@@ -150,54 +155,57 @@ class Graphite_Resource extends Graphite_Node
 			$s_type = "bnode";
 		}
 
-		foreach( $this->g->t["sp"][$s] as $p => $os )
-		{
-			$p = $this->g->expandURI( $p );
-			$p_type = "uri";
-			if( preg_match( '/^_:/', $p ) )
-			{
-				$p_type = "bnode";
-			}
+		if (!empty($this->g->t["sp"][$s])) {
 
-			foreach( $os as $o )
+			foreach( $this->g->t["sp"][$s] as $p => $os )
 			{
-				$o_lang = null;
-				$o_datatype = null;
-				if( is_array( $o ))
+				$p = $this->g->expandURI( $p );
+				$p_type = "uri";
+				if( preg_match( '/^_:/', $p ) )
 				{
-					$o_type = "literal";
-					if( isset( $o["l"] ) && $o["l"] )
-					{
-						$o_lang = $o["l"];
-					}
-					if( isset( $o["d"] ) )
-					{
-						$o_datatype = $this->g->expandURI( $o["d"] );
-					}
-					$o = $o["v"];
+					$p_type = "bnode";
 				}
-				else
-				{
-					$o = $this->g->expandURI( $o );
-					$o_type = "uri";
-					if( preg_match( '/^_:/', $o ) )
-					{
-						$o_type = "bnode";
-						$bnodes_to_add[] = $o;
-					}
-				}
-				$triple = array(
-					"s" => $s,
-					"s_type" => $s_type,
-					"p" => $p,
-					"p_type" => $p_type,
-					"o" => $o,
-					"o_type" => $o_type,
-				);
-				$triple["o_datatype"] = $o_datatype;
-				$triple["o_lang"] = $o_lang;
 
-				$arcTriples[] = $triple;
+				foreach( $os as $o )
+				{
+					$o_lang = null;
+					$o_datatype = null;
+					if( is_array( $o ))
+					{
+						$o_type = "literal";
+						if( isset( $o["l"] ) && $o["l"] )
+						{
+							$o_lang = $o["l"];
+						}
+						if( isset( $o["d"] ) )
+						{
+							$o_datatype = $this->g->expandURI( $o["d"] );
+						}
+						$o = $o["v"];
+					}
+					else
+					{
+						$o = $this->g->expandURI( $o );
+						$o_type = "uri";
+						if( preg_match( '/^_:/', $o ) )
+						{
+							$o_type = "bnode";
+							$bnodes_to_add[] = $o;
+						}
+					}
+					$triple = array(
+						"s" => $s,
+						"s_type" => $s_type,
+						"p" => $p,
+						"p_type" => $p_type,
+						"o" => $o,
+						"o_type" => $o_type,
+					);
+					$triple["o_datatype"] = $o_datatype;
+					$triple["o_lang"] = $o_lang;
+
+					$arcTriples[] = $triple;
+				}
 			}
 		}
 
@@ -265,6 +273,10 @@ class Graphite_Resource extends Graphite_Node
 	public function isType( /* List */ )
 	{
 		$args = func_get_args();
+		if (empty($args)) {
+			return false;
+		}
+
 		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
 		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
 
@@ -401,8 +413,8 @@ class Graphite_Resource extends Graphite_Node
 	}
 
 	function __toString() {
-        return !empty($this->uri) ? (string)$this->uri : "";
-    }
+		return !empty($this->uri) ? (string)$this->uri : "";
+	}
 	function dumpValue($options=array())
 	{
 		$label = $this->dumpValueText();
