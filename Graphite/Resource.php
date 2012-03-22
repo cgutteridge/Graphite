@@ -232,6 +232,10 @@ class Graphite_Resource extends Graphite_Node
 
 	public function loadSameAsOrg( $prefix )
 	{
+		if (empty($this->uri)) {
+			return 0;
+		}
+
 		$sameasorg_uri = "http://sameas.org/rdf?uri=".urlencode( $this->uri );
 		$n = $this->g->load( $sameasorg_uri );
 		$n+= $this->loadSameAs( $prefix );
