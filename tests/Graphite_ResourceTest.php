@@ -36,6 +36,10 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
 
     public function test__toString() {
         $this->assertSame("", (string)$this->resource);
+
+        $this->resource->uri = 'http://bob.com';
+
+        $this->assertSame('http://bob.com', (string)$this->resource);
     }
 
     public function testDump() {
