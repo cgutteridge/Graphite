@@ -3,4 +3,4 @@ php:
   - 5.3
   - 5.4
 before_script:
-  - git clone https://CloCkWeRX@github.com/CloCkWeRX/arc2.git lib/ARC2
+  - git clone https://CloCkWeRX@github.com/semsol/arc2.git lib/ARC2
