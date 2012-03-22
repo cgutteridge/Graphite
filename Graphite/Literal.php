@@ -18,7 +18,7 @@ class Graphite_Literal extends Graphite_Node
 	}
 
 	function __toString() {
-		return !empty($this->triple["v"]) ? (string)$this->triple['v'] : "";
+		return isset($this->triple["v"]) ? (string)$this->triple['v'] : "";
 	}
 	function datatype() { return @$this->triple["d"]; }
 	function language() { return @$this->triple["l"]; }
