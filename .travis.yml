@@ -4,3 +4,4 @@ php:
   - 5.4
 before_script:
   - git clone https://CloCkWeRX@github.com/semsol/arc2.git lib/ARC2
+script: phpunit --coverage-text
