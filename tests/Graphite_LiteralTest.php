@@ -23,6 +23,10 @@ class Graphite_LiteralTest extends PHPUnit_Framework_TestCase {
         $this->node->setTriple(array('v' => 'hi', 'd' => '#fish', 'l' => 'en-US'));
 
         $this->assertSame("hi", (string)$this->node);
+
+        $this->node->setTriple(array('v' => '0', 'd' => '#fish', 'l' => 'en-US'));
+
+        $this->assertSame("0", (string)$this->node);
     }
 
     public function testLink() {
