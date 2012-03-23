@@ -20,7 +20,12 @@
 # todo:
 # hasRelationValue, hasRelation, filter
 
-require_once 'ARC2.php';
+# Load ARC2 assuming it's not already been loaded. Requires ARC2.php to be 
+# in the path.
+if( !class_exists( "ARC2" ) )
+{
+	require_once 'ARC2.php';
+}
 
 class Graphite
 {
