@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<docblox>
+	<title>Graphite</title>
+  <parser>
+    <target>build/api-docs</target>
+  </parser>
+  <transformer>
+    <target>build/api-docs</target>
+  </transformer>
+  <!--
+  <transformations>
+      <template name="abstract" />
+  </transformations>
+  -->
+  <files>
+    <directory>.</directory>
+    <ignore>test/*</ignore>
+    <ignore>lib/*</ignore>
+  </files>
+</docblox>
