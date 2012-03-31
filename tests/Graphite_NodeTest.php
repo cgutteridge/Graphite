@@ -88,7 +88,6 @@ class Graphite_NodeTest extends  PHPUnit_Framework_TestCase {
 
     public function test__toString() {
         $this->assertSame("[NULL]", (string)$this->node);
-        $this->assertSame("[NULL]", $this->node->toString());
     }
 
 

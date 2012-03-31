@@ -27,7 +27,7 @@ class Graphite_Resource extends Graphite_Node
 
 		$l = $this->all( $args );
 		if( sizeof( $l ) == 0 ) { return; }
-		return $l[0]->toString();
+		return (string)$l[0];
 	}
 	# getString deprecated in favour of getLiteral
 	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
@@ -62,7 +62,7 @@ class Graphite_Resource extends Graphite_Node
 		$l = array();
 		foreach( $this->all( $args ) as $item )
 		{
-			$l []= $item->toString();
+			$l []= (string)$item;
 		}
 		return new Graphite_ResourceList($this->g,$l);
 	}
@@ -420,6 +420,7 @@ class Graphite_Resource extends Graphite_Node
 	function __toString() {
 		return !empty($this->uri) ? (string)$this->uri : "";
 	}
+
 	function dumpValue($options=array())
 	{
 		$label = $this->dumpValueText();
