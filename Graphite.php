@@ -588,10 +588,10 @@ rkJggg==
 		return join("\n",$r );
 	}
 
+    /** @deprecated All graphite objects should implement __toString() */
 	public function forceString( &$uri )
 	{
-		if( is_object( $uri ) ) { $uri = $uri->toString(); }
-		return $uri;
+		return (string)$uri
 	}
 }
 
