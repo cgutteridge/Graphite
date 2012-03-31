@@ -189,7 +189,6 @@ class Graphite_Test extends PHPUnit_Framework_TestCase {
 	public function allObjects()
 	public function dump( $options=array() )
 	public function dumpText( $options=array() )
-	public function forceString( &$uri )
     ');
     }
 }

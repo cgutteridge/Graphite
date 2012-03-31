@@ -70,12 +70,12 @@ class Graphite_Description
 			{
 				if( is_a( $value, "Graphite_Literal" ) )
 				{
-					$json[$jsonkey][] = $value->toString();
+					$json[$jsonkey][] = (string)$value;
 				}
 				else
 				{
 					$subjson = array();
-					$uri = $value->toString();
+					$uri = (string)$value;
 					if( substr( $uri,0,2 ) != "_:" ) { $subjson["_uri"] = $uri; }
 					if( isset( $tree[$dir][$code]) )
 					{
@@ -116,9 +116,9 @@ class Graphite_Description
 				if( is_a( $value, "Graphite_Literal" ) )
 				{
 					$new_graph->addTriple(
-						$resource->toString(),
-						$relation->toString(),
-						$value->toString(),
+						(string)$resource,
+						(string)$relation,
+						(string)$value,
 						$value->datatype(),
 						$value->language() );
 				}
@@ -135,16 +135,16 @@ class Graphite_Description
 					if( $dir == "+" )
 					{
 						$new_graph->addTriple(
-							$resource->toString(),
-							$relation->toString(),
-							$value->toString() );
+							(string)$resource,
+							(string)$relation,
+							(string)$value );
 					}
 					else
 					{
 						$new_graph->addTriple(
-							$value->toString(),
-							$relation->toString(),
-							$resource->toString() );
+							(string)$value,
+							(string)$relation,
+							(string)$resource );
 					}
 				}
 			}
@@ -171,7 +171,7 @@ class Graphite_Description
 		$bits = array();
 		if( !isset( $in_dangler ) )
 		{
-			$in_dangler = "<".$this->resource->toString().">";
+			$in_dangler = "<".(string)$this->resource.">";
 		}
 
 		$i = 0;

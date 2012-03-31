@@ -73,9 +73,6 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
         $this->resource->uri = 'mailto:you@example.com';
         $this->resource->g->mailtoIcon("http://example.com/BOB.jpg");
         $this->assertSame("<span style='white-space:nowrap'><a title='mailto:you@example.com' href='mailto:you@example.com'><img style='padding-right:0.2em;' src='http://example.com/BOB.jpg' /></a><a title='mailto:you@example.com' href='mailto:you@example.com'>you@example.com</a></span>", $this->resource->prettyLink());
-
-        $this->markTestIncomplete("Needs further coverage");
-        $this->markTestIncomplete("Test is fragile");
     }
 
 
@@ -85,7 +82,6 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
         $this->resource->uri = 'http://bob.com';
 
         $this->assertSame("<a title='http://bob.com' href='http://bob.com'>http://bob.com</a>", $this->resource->link());
-        $this->markTestIncomplete("Needs further coverage");
     }
 
     public function testLabel() {
@@ -136,8 +132,24 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
         $this->assertSame(0, $this->resource->loadSameAs(null));
     }
 
-    public function testLoadSameAsOrg() {
+    public function testLoadSameAsOrg1() {
         $this->assertSame(0, $this->resource->loadSameAsOrg(null));
+    }
+
+    public function testLoadSameAsOrg2() {
+        $retriever = $this->getMock('Graphite_Retriever', array(), array($this->resource->g));
+        $this->resource->g->setRetriever($retriever);
+
+        $retriever->expects($this->once())
+                    ->method('retrieve')
+                    ->with('http://sameas.org/rdf?uri=' . urlencode('http://bob.com'))
+                    ->will($this->returnValue(
+                            file_get_contents(dirname(__FILE__) . '/data/sameas.org.rdf')
+                    ));
+
+        $this->resource->uri = 'http://bob.com';
+
+        $this->assertSame(151, $this->resource->loadSameAsOrg(null));
     }
 
     public function testLoadDataGovUKBackLinks() {

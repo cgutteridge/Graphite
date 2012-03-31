@@ -50,8 +50,7 @@ class Graphite_ResourceList extends ArrayIterator
 		foreach( $this as $resource )
 		{
 			if( !$first ) { $l []= $str; }
-			$this->g->forceString( $resource );
-			$l []= $resource;
+			$l []= (string)$resource;
 			$first = 0;
 		}
 		return join( "", $l );
@@ -102,7 +101,7 @@ class Graphite_ResourceList extends ArrayIterator
 		$graphite_sort_args = array();
 		foreach( $args as $arg )
 		{
-			if( $arg instanceof Graphite_Resource ) { $arg = $arg->toString(); }
+			if( $arg instanceof Graphite_Resource ) { $arg = (string)$arg; }
 			$graphite_sort_args [] = $arg;
 		}
 
@@ -241,9 +240,9 @@ class Graphite_ResourceList extends ArrayIterator
 			$all = $resource->all( $args );
 			foreach( $all as $to_add )
 			{
-				if( isset($done[$to_add->toString()]) ) { continue; }
-				$l []= $to_add->toString();
-				$done[$to_add->toString()] = 1;
+				if( isset($done[(string)$to_add]) ) { continue; }
+				$l []= (string)$to_add;
+				$done[(string)$to_add] = 1;
 			}
 		}
 		return new Graphite_ResourceList($this->g,$l);
@@ -268,9 +267,9 @@ class Graphite_ResourceList extends ArrayIterator
 			$all = $resource->all( $args );
 			foreach( $all as $to_add )
 			{
-				if( isset($done[$to_add->toString()]) ) { continue; }
+				if( isset($done[(string)$to_add]) ) { continue; }
 				$l []= $to_add;
-				$done[$to_add->toString()] = 1;
+				$done[(string)$to_add] = 1;
 			}
 		}
 		return new Graphite_ResourceList($this->g,$l);
@@ -303,9 +302,9 @@ class Graphite_ResourceList extends ArrayIterator
 		$done = array();
 		foreach( $this as $resource )
 		{
-			if( isset( $done[$resource->toString()] ) ) { continue; }
+			if( isset( $done[(string)$resource] ) ) { continue; }
 			$l [] = $resource;
-			$done[$resource->toString()]=1;
+			$done[(string)$resource]=1;
 		}
 		return new Graphite_ResourceList($this->g,$l);
 	}
@@ -327,16 +326,16 @@ class Graphite_ResourceList extends ArrayIterator
 		$done = array();
 		foreach( $this as $resource )
 		{
-			if( isset( $done[$resource->toString()] ) ) { continue; }
+			if( isset( $done[(string)$resource] ) ) { continue; }
 			$list [] = $resource;
-			$done[$resource->toString()]=1;
+			$done[(string)$resource]=1;
 		}
 		foreach( $args as $arg )
 		{
 			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			if( isset( $done[$arg->toString()] ) ) { continue; }
+			if( isset( $done[(string)$arg] ) ) { continue; }
 			$list [] = $arg;
-			$done[$arg->toString()]=1;
+			$done[(string)$arg]=1;
 		}
 		return $list;
 	}
@@ -361,7 +360,7 @@ class Graphite_ResourceList extends ArrayIterator
 			if( ! $arg instanceof Graphite_Resource ) {
 				$arg = $this->g->resource( $arg );
 			}
-			$seen[$arg->toString()]=1;
+			$seen[(string)$arg]=1;
 		}
 
 		foreach( $args as $arg )
@@ -369,7 +368,7 @@ class Graphite_ResourceList extends ArrayIterator
 			if( ! $arg instanceof Graphite_Resource ) {
 				$arg = $this->g->resource( $arg );
 			}
-			if( ! isset($seen[$arg->toString()]) ) {
+			if( ! isset($seen[(string)$arg]) ) {
 				continue;
 			}
 			$list [] = $arg;
@@ -395,12 +394,12 @@ class Graphite_ResourceList extends ArrayIterator
 		foreach( $args as $arg )
 		{
 			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			$exclude[$arg->toString()]=1;
+			$exclude[(string)$arg]=1;
 		}
 		foreach( $this as $arg )
 		{
 			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			if( isset($exclude[$arg->toString()]) ) { continue; }
+			if( isset($exclude[(string)$arg]) ) { continue; }
 			$list [] = $arg;
 		}
 		return $list;

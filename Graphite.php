@@ -27,8 +27,15 @@ if( !class_exists( "ARC2" ) )
 	require_once 'ARC2.php';
 }
 
+require_once 'Graphite/Retriever.php';
+
 class Graphite
 {
+
+	/**
+	 * @var Graphite_Retriever $retriever
+	 */
+	protected $retriever;
 
 	/**
 	 * Create a new instance of Graphite. @see ns() for how to specify a namespace map and a list of pre-declared namespaces.
@@ -90,11 +97,15 @@ rkJggg==
 		$this->firstGraphURI = null;
 		if( $uri )
 		{
-			$this->forceString( $uri );
-			$this->load( $uri );
+			$this->load( (string)$uri );
 		}
 
 		$this->bnodeprefix = 0;
+		$this->setRetriever(new Graphite_Retriever($this));
+	}
+
+	public function setRetriever(Graphite_Retriever $retriever) {
+		$this->retriever = $retriever;
 	}
 
 	/**
@@ -129,6 +140,8 @@ rkJggg==
 
 	/**
 	 * $dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.
+	 *
+	 * @todo Shift to Graphite_Retriever
 	 */
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
 	{
@@ -205,8 +218,7 @@ rkJggg==
 	 */
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
-		$this->forceString( $uri );
-		$uri = $this->expandURI( $uri );
+		$uri = $this->expandURI( (string)$uri );
 
 		if( substr( $uri,0,5 ) == "data:" )
 		{
@@ -216,75 +228,13 @@ rkJggg==
 		}
 		else
 		{
-			if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
-			if( isset($this->cacheDir) )
-			{
-				$filename = $this->cacheDir."/".md5( $this->removeFragment( $uri ) );
+            if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
+			$data = $this->retriever->retrieve($uri);
 
-				if( !file_exists( $filename ) || filemtime($filename)+$this->cacheAge < time() )
-				{
-					# decache if out of date, even if we fail to re cache.
-					if( file_exists( $filename ) ) { unlink( $filename ); }
-					$url = $uri;
-					$ttl = 16;
-					$mime = "";
-					$old_user_agent = ini_get('user_agent');
-					ini_set('user_agent', "PHP\r\nAccept: application/rdf+xml");
-					while( $ttl > 0 )
-					{
-						$ttl--;
-						# dirty hack to set the accept header without using curl
-						if( !$rdf_fp = fopen($url, 'r') ) { break; }
-						$meta_data = stream_get_meta_data($rdf_fp);
-						$redir = 0;
-						if( @!$meta_data['wrapper_data'] )
-						{
-							fclose($rdf_fp);
-							continue;
-						}
-						foreach($meta_data['wrapper_data'] as $response)
-						{
-							if (substr(strtolower($response), 0, 10) == 'location: ')
-							{
-								$newurl = substr($response, 10);
-								if( substr( $newurl, 0, 1 ) == "/" )
-								{
-									$parts = preg_split( "/\//",$url );
-									$newurl = $parts[0]."//".$parts[2].$newurl;
-								}
-								$url = $newurl;
-								$redir = 1;
-							}
-							if (substr(strtolower($response), 0, 14) == 'content-type: ')
-							{
-								$mime = preg_replace( "/\s*;.*$/","", substr($response, 14));
-							}
-						}
-						if( !$redir ) { break; }
-					}
-					ini_set('user_agent', $old_user_agent);
-					if( $ttl > 0 && $mime == "application/rdf+xml" && $rdf_fp )
-					{
-						# candidate for caching!
-						if (!$cache_fp = fopen($filename, 'w'))
-						{
-							echo "Cannot write file ($filename)";
-							exit;
-						}
-
-						while (!feof($rdf_fp)) {
-							fwrite( $cache_fp, fread($rdf_fp, 8192) );
-						}
-						fclose($cache_fp);
-					}
-					@fclose($rdf_fp);
-				}
-
-			}
-			if( isset( $filename ) &&  file_exists( $filename ) )
+			if(!empty($data))
 			{
 				$parser = ARC2::getRDFXMLParser();
-				$parser->parse( $uri, file_get_contents($filename) );
+				$parser->parse( $uri, $data );
 			}
 			else
 			{
@@ -498,9 +448,8 @@ rkJggg==
 	{
 		if( !$uri ) { $uri = $this->firstGraphURI; }
 		if( !$uri ) { return new Graphite_Null($this->g); }
-		$this->forceString( $uri );
 
-		return $this->resource( $uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
+		return $this->resource( (string)$uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
 	/**
@@ -533,8 +482,7 @@ rkJggg==
 	 */
 	public function resource( $uri )
 	{
-		$this->forceString( $uri );
-		$uri = $this->expandURI( $uri );
+		$uri = $this->expandURI( (string)$uri );
 		return new Graphite_Resource( $this, $uri );
 	}
 
@@ -552,16 +500,15 @@ rkJggg==
 	 */
 	public function shrinkURI( $uri )
 	{
-		$this->forceString( $uri );
-		if( $uri == "" ) { return "* This Document *"; }
+		if( (string)$uri == "" ) { return "* This Document *"; }
 		foreach( $this->ns as $short=>$long )
 		{
-			if( substr( $uri, 0, strlen($long) ) == $long )
+			if( substr( (string)$uri, 0, strlen($long) ) == $long )
 			{
-				return $short.":".substr( $uri, strlen($long ));
+				return $short.":".substr( (string)$uri, strlen($long ));
 			}
 		}
-		return $uri;
+		return (string)$uri;
 	}
 
 	/**
@@ -570,16 +517,15 @@ rkJggg==
 	 */
 	public function expandURI( $uri )
 	{
-		$this->forceString( $uri );
-		if( preg_match( '/:/', $uri ) )
+		if( preg_match( '/:/', (string)$uri ) )
 		{
-			list( $ns, $tag ) = preg_split( "/:/", $uri, 2 );
+			list( $ns, $tag ) = preg_split( "/:/", (string)$uri, 2 );
 			if( isset($this->ns[$ns]) )
 			{
 				return $this->ns[$ns].$tag;
 			}
 		}
-		return $uri;
+		return (string)$uri;
 	}
 
 	/**
@@ -642,10 +588,10 @@ rkJggg==
 		return join("\n",$r );
 	}
 
+    /** @deprecated All graphite objects should implement __toString() */
 	public function forceString( &$uri )
 	{
-		if( is_object( $uri ) ) { $uri = $uri->toString(); }
-		return $uri;
+		return (string)$uri;
 	}
 }
 
