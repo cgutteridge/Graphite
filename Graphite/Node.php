@@ -23,6 +23,8 @@ class Graphite_Node
 	function dump() { return "<div style='padding:0.5em; background-color:lightgrey;border:dashed 1px grey;'>Non-existant Node</div>"; }
 	function nodeType() { return "#node"; }
 	function __toString() { return "[NULL]"; }
+
+    /** @deprecated Use __toString() or (string) instead */
 	function toString() { return $this->__toString(); }
 	function datatype() { return null; }
 	function language() { return null; }
