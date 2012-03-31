@@ -91,8 +91,7 @@ rkJggg==
 		$this->firstGraphURI = null;
 		if( $uri )
 		{
-			$this->forceString( $uri );
-			$this->load( $uri );
+			$this->load( (string)$uri );
 		}
 
 		$this->bnodeprefix = 0;
@@ -213,8 +212,7 @@ rkJggg==
 	 */
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
-		$this->forceString( $uri );
-		$uri = $this->expandURI( $uri );
+		$uri = $this->expandURI( (string)$uri );
 
 		if( substr( $uri,0,5 ) == "data:" )
 		{
@@ -444,9 +442,8 @@ rkJggg==
 	{
 		if( !$uri ) { $uri = $this->firstGraphURI; }
 		if( !$uri ) { return new Graphite_Null($this->g); }
-		$this->forceString( $uri );
 
-		return $this->resource( $uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
+		return $this->resource( (string)$uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
 	/**
@@ -479,8 +476,7 @@ rkJggg==
 	 */
 	public function resource( $uri )
 	{
-		$this->forceString( $uri );
-		$uri = $this->expandURI( $uri );
+		$uri = $this->expandURI( (string)$uri );
 		return new Graphite_Resource( $this, $uri );
 	}
 
@@ -498,16 +494,15 @@ rkJggg==
 	 */
 	public function shrinkURI( $uri )
 	{
-		$this->forceString( $uri );
-		if( $uri == "" ) { return "* This Document *"; }
+		if( (string)$uri == "" ) { return "* This Document *"; }
 		foreach( $this->ns as $short=>$long )
 		{
-			if( substr( $uri, 0, strlen($long) ) == $long )
+			if( substr( (string)$uri, 0, strlen($long) ) == $long )
 			{
-				return $short.":".substr( $uri, strlen($long ));
+				return $short.":".substr( (string)$uri, strlen($long ));
 			}
 		}
-		return $uri;
+		return (string)$uri;
 	}
 
 	/**
@@ -516,16 +511,15 @@ rkJggg==
 	 */
 	public function expandURI( $uri )
 	{
-		$this->forceString( $uri );
-		if( preg_match( '/:/', $uri ) )
+		if( preg_match( '/:/', (string)$uri ) )
 		{
-			list( $ns, $tag ) = preg_split( "/:/", $uri, 2 );
+			list( $ns, $tag ) = preg_split( "/:/", (string)$uri, 2 );
 			if( isset($this->ns[$ns]) )
 			{
 				return $this->ns[$ns].$tag;
 			}
 		}
-		return $uri;
+		return (string)$uri;
 	}
 
 	/**

@@ -4,8 +4,7 @@ class Graphite_Resource extends Graphite_Node
 	function __construct(Graphite $g, $uri )
 	{
 		$this->g = $g;
-		$this->g->forceString( $uri );
-		$this->uri = $uri;
+		$this->uri = (string)$uri;
 	}
 
 	public function get( /* List */ )
@@ -253,13 +252,12 @@ class Graphite_Resource extends Graphite_Node
 		$cnt = 0;
 		foreach( $this->all( "owl:sameAs" ) as $sameas )
 		{
-			$this->g->forceString( $sameas );
-			if( $prefix && substr( $sameas, 0, strlen($prefix )) != $prefix )
+			if( $prefix && substr( (string)$sameas, 0, strlen($prefix )) != $prefix )
 			{
 				continue;
 			}
 
-			$cnt += $this->g->load( $sameas, array( $sameas=>$this->uri ) );
+			$cnt += $this->g->load( (string)$sameas, array( (string)$sameas=>$this->uri ) );
 		}
 		return $cnt;
 	}
@@ -388,7 +386,7 @@ class Graphite_Resource extends Graphite_Node
 			{
 				$pattern = "<span style='font-size:130%%'>&rarr;</span> <a title='%s' href='%s' style='text-decoration:none;color: green'>%s</a> <span style='font-size:130%%'>&rarr;</span> %s";
 			}
-			$this->g->forceString( $prop );
+			$prop = (string)$prop;
 			$plist []= sprintf( $pattern, $prop, $prop, $this->g->shrinkURI($prop), join( ", ",$olist ));
 		}
 		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='text-align:left;font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
@@ -449,11 +447,9 @@ class Graphite_Resource extends Graphite_Node
 		{
 			if( is_a( $arg, "Graphite_InverseRelation" ) )
 			{
-				$this->g->forceString( $arg );
-				return array( "op", "$arg" );
+				return array( "op", (string)$arg );
 			}
-			$this->g->forceString( $arg );
-			return array( "sp", "$arg" );
+			return array( "sp", (string)$arg );
 		}
 
 		$set = "sp";

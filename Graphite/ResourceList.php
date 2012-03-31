@@ -50,8 +50,7 @@ class Graphite_ResourceList extends ArrayIterator
 		foreach( $this as $resource )
 		{
 			if( !$first ) { $l []= $str; }
-			$this->g->forceString( $resource );
-			$l []= $resource;
+			$l []= (string)$resource;
 			$first = 0;
 		}
 		return join( "", $l );
