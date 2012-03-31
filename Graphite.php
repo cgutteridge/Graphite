@@ -585,7 +585,7 @@ rkJggg==
     /** @deprecated All graphite objects should implement __toString() */
 	public function forceString( &$uri )
 	{
-		return (string)$uri
+		return (string)$uri;
 	}
 }
 
