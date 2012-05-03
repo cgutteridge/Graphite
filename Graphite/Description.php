@@ -115,11 +115,13 @@ class Graphite_Description
 			{
 				if( is_a( $value, "Graphite_Literal" ) )
 				{
+					$datatype = $value->datatype();
+					if( !isset($datatype) ) { $datatype='literal'; }
 					$new_graph->addTriple(
 						(string)$resource,
 						(string)$relation,
 						(string)$value,
-						$value->datatype(),
+						$datatype,
 						$value->language() );
 				}
 				else
