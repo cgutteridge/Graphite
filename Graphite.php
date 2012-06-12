@@ -431,7 +431,11 @@ rkJggg==
 	 */
 	public function serialize( $type = "RDFXML" )
 	{
-		$serializer = ARC2::getSer( $type, array( "ns" => $this->ns ) );
+		$ns = $this->ns;
+		unset( $ns["dct"] ); 
+		// use dcterms for preference. duplicates seem to cause
+		// bugs in the serialiser
+		$serializer = ARC2::getSer( $type, array( "ns" => $ns ));
 		return $serializer->getSerializedTriples( $this->toArcTriples() );
 	}
 
