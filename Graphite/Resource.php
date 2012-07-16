@@ -256,8 +256,7 @@ class Graphite_Resource extends Graphite_Node
 			{
 				continue;
 			}
-
-			$cnt += $this->g->load( Graphite::asString($sameas), array( (string)$sameas=>$this->uri ) );
+			$cnt += $this->g->load( Graphite::asString($sameas), array( Graphite::asString($sameas)=>$this->uri ) );
 		}
 		return $cnt;
 	}

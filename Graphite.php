@@ -230,13 +230,14 @@ rkJggg==
 		}
 		else
 		{
-            if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
+			if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
+
 			$data = $this->retriever->retrieve($uri);
 
 			if(!empty($data))
 			{
 				$parser = ARC2::getRDFXMLParser( $this->arc2config );
-				$parser->parse( $uri, file_get_contents($filename) );
+				$parser->parse( $uri, $data );
 			}
 			else
 			{
