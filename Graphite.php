@@ -20,9 +20,26 @@
 # todo:
 # hasRelationValue, hasRelation, filter
 
+# Load ARC2 assuming it's not already been loaded. Requires ARC2.php to be 
+# in the path.
+if( !class_exists( "ARC2" ) )
+{
+	require_once 'ARC2.php';
+}
+
+require_once 'Graphite/Retriever.php';
 
 class Graphite
 {
+
+	/**
+	 * @var Graphite_Retriever $retriever
+	 */
+	protected $retriever;
+
+	/**
+	 * Create a new instance of Graphite. @see ns() for how to specify a namespace map and a list of pre-declared namespaces.
+	 */
 	public function __construct( $namespaces = array(), $uri = null )
 	{
 		$this->workAround4StoreBNodeBug = false;
@@ -33,6 +50,7 @@ class Graphite
 		}
 		$this->ns( "foaf", "http://xmlns.com/foaf/0.1/" );
 		$this->ns( "dc",   "http://purl.org/dc/elements/1.1/" );
+		$this->ns( "dcterms",  "http://purl.org/dc/terms/" );
 		$this->ns( "dct",  "http://purl.org/dc/terms/" );
 		$this->ns( "rdf",  "http://www.w3.org/1999/02/22-rdf-syntax-ns#" );
 		$this->ns( "rdfs", "http://www.w3.org/2000/01/rdf-schema#" );
@@ -47,9 +65,9 @@ class Graphite
 
 		$this->loaded = array();
 		$this->debug = false;
-		$this->arc2Config = null;
+		$this->arc2config = null;
 
-		$this->labelRelations = array( 
+		$this->labelRelations = array(
 			"skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" );
 		$this->mailtoIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAIAAAAvJUALAAAABGdBTUEAALGPC/xhBQAAAAlwSFlz
 AAALEwAACxMBAJqcGAAAAAd0SU1FB9wCAhEsArM6LtoAAAF/SURBVBjTfZFNTxNhFIXf985QypTA
@@ -80,13 +98,20 @@ rkJggg==
 		$this->firstGraphURI = null;
 		if( $uri )
 		{
-			$this->forceString( $uri );
-			$this->load( $uri );
+			$this->load( (string)$uri );
 		}
 
 		$this->bnodeprefix = 0;
+		$this->setRetriever(new Graphite_Retriever($this));
 	}
 
+	public function setRetriever(Graphite_Retriever $retriever) {
+		$this->retriever = $retriever;
+	}
+
+	/**
+	 * Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. <a href='https://github.com/cgutteridge/Graphite/blob/master/examples/freeze.php'>This example</a> is a command line script you can modify to load and freeze a graph.
+	 */
 	public function freeze( $filename )
 	{
 		$fh = fopen($filename, 'w') or die("can't open file");
@@ -94,6 +119,9 @@ rkJggg==
 		fclose($fh);
 	}
 
+	/**
+	 * Graphite uses ARC2 to parse RDF, which isn't as fast as using a compiled library. I may add support for <a href='http://www4.wiwiss.fu-berlin.de/bizer/rdfapi/'>RAP</a> or something similar. When Graphite loads a triple it indexes it by both subject &amp; object, which also takes a little time. To address this issue, freeze and thaw go some way to help speed things up. freeze takes a graph object, including all the namespaces set with ns() and saves it to disk as a serialised PHP object, which is much faster to load then a large RDF file. It's ideal in a situation where you want to build a site from a single RDF document which is updated occasionally. <a href='https://github.com/cgutteridge/Graphite/blob/master/examples/freeze.php'>This example</a> is a command line script you can modify to load and freeze a graph.
+	 */
 	public static function thaw( $filename )
 	{
 		return unserialize( join( "", file( $filename )));
@@ -110,6 +138,12 @@ rkJggg==
 		$graph->t = $data["t"];
 		return $graph;
 	}
+
+	/**
+	 * $dir should be a directory the webserver has permission to read and write to. Any RDF/XML documents which graphite downloads will be saved here. If a cache exists and is newer than $age seconds then load() will use the document in the cache directory in preference to doing an HTTP request. $age defaults to 24*60*60 - 24 hours. This including this function can seriously improve graphite performance! If you want to always load certain documents, load them before setting the cache.
+	 *
+	 * @todo Shift to Graphite_Retriever
+	 */
 	public function cacheDir( $dir, $age = 86400 ) # default age is 24 hours
 	{
 		$error = "";
@@ -129,17 +163,27 @@ rkJggg==
 	public function setARC2Config( $config ) { $this->arc2config = $config; }
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
 
+	/**
+	 * Return a list of the relations currently used for $resource->label(), if called with a parameter then this should be an array to <strong>replace</strong> the current list. To just add additonal relation types to use as labels, use addLabelRelation($relation).
+	 */
 	public function labelRelations( $new = null )
 	{
 		$lr = $this->labelRelations;
 		if( isset( $new ) ) { $this->labelRelations = $new; }
 		return $lr;
 	}
+
+	/**
+	 * Return a list of the relations currently used for $resource->label(), if called with a parameter then this should be an array to <strong>replace</strong> the current list. To just add additonal relation types to use as labels, use addLabelRelation($relation).
+	 */
 	public function addLabelRelation( $addition )
 	{
 		$this->labelRelations []= $addition;
 	}
 
+	/**
+	 * Get or set the URL of the icon used for mailto: and tel: links in prettyLink(). If set to an empty string then no icon will be shown.
+	 */
 	public function mailtoIcon( $new = null )
 	{
 		$icon = $this->mailtoIcon;
@@ -147,6 +191,9 @@ rkJggg==
 		return $icon;
 	}
 
+	/**
+	 * Get or set the URL of the icon used for mailto: and tel: links in prettyLink(). If set to an empty string then no icon will be shown.
+	 */
 	public function telIcon( $new = null )
 	{
 		$icon = $this->telIcon;
@@ -168,10 +215,12 @@ rkJggg==
 		return $this->loaded[$this->removeFragment( $uri )];
 	}
 
+	/**
+	 * Load the RDF from the given URI or URL. Return the number of triples loaded.
+	 */
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
-		$this->forceString( $uri );
-		$uri = $this->expandURI( $uri );
+		$uri = $this->expandURI( (string)$uri );
 
 		if( substr( $uri,0,5 ) == "data:" )
 		{
@@ -181,72 +230,10 @@ rkJggg==
 		}
 		else
 		{
-			if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
-			if( isset($this->cacheDir) )
-			{
-				$filename = $this->cacheDir."/".md5( $this->removeFragment( $uri ) );
+            if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
+			$data = $this->retriever->retrieve($uri);
 
-				if( !file_exists( $filename ) || filemtime($filename)+$this->cacheAge < time() )
-				{
-					# decache if out of date, even if we fail to re cache.
-					if( file_exists( $filename ) ) { unlink( $filename ); }
-					$url = $uri;
-					$ttl = 16;
-					$mime = "";
-					$old_user_agent = ini_get('user_agent');
-					ini_set('user_agent', "PHP\r\nAccept: application/rdf+xml");
-					while( $ttl > 0 )
-					{
-						$ttl--;
-						# dirty hack to set the accept header without using curl
-						if( !$rdf_fp = fopen($url, 'r') ) { break; }
-						$meta_data = stream_get_meta_data($rdf_fp);
-						$redir = 0;
-						if( @!$meta_data['wrapper_data'] )
-						{
-							fclose($rdf_fp);
-							continue;
-						}
-						foreach($meta_data['wrapper_data'] as $response)
-						{
-							if (substr(strtolower($response), 0, 10) == 'location: ')
-							{
-								$newurl = substr($response, 10);
-								if( substr( $newurl, 0, 1 ) == "/" )
-								{
-									$parts = preg_split( "/\//",$url );
-									$newurl = $parts[0]."//".$parts[2].$newurl;
-								}
-								$url = $newurl;
-								$redir = 1;
-							}
-							if (substr(strtolower($response), 0, 14) == 'content-type: ')
-							{
-								$mime = preg_replace( "/\s*;.*$/","", substr($response, 14));
-							}
-						}
-						if( !$redir ) { break; }
-					}
-					ini_set('user_agent', $old_user_agent);
-					if( $ttl > 0 && $mime == "application/rdf+xml" && $rdf_fp )
-					{
-						# candidate for caching!
-						if (!$cache_fp = fopen($filename, 'w'))
-						{
-							echo "Cannot write file ($filename)";
-							exit;
-						}
-
-						while (!feof($rdf_fp)) {
-							fwrite( $cache_fp, fread($rdf_fp, 8192) );
-						}
-						fclose($cache_fp);
-					}
-					@fclose($rdf_fp);
-				}
-
-			}
-			if( isset( $filename ) &&  file_exists( $filename ) )
+			if(!empty($data))
 			{
 				$parser = ARC2::getRDFXMLParser( $this->arc2config );
 				$parser->parse( $uri, file_get_contents($filename) );
@@ -283,11 +270,17 @@ rkJggg==
 		return $this->loaded( $uri );
 	}
 
+	/**
+	 * This uses one or more SPARQL queries to the given endpoint to get all the triples required for the description. The return value is the total number of triples added to the graph.
+	 */
 	function loadSPARQL( $endpoint, $query )
 	{
 		return $this->load( $endpoint."?query=".urlencode($query) );
 	}
 
+	/**
+	 * Take a base URI and a string of turtle RDF and load the new triples into the graph. Return the number of triples loaded.
+	 */
 	function addTurtle( $base, $data )
 	{
 		$parser = ARC2::getTurtleParser( $this->arc2config );
@@ -305,6 +298,12 @@ rkJggg==
 		}
 		return $this->addTriples( $parser->getTriples() );
 	}
+
+	/**
+	 * As for addTurtle but load a string of RDF XML
+	 *
+	 * @see addTurtle
+	 */
 	function addRDFXML( $base, $data )
 	{
 		$parser = ARC2::getRDFXMLParser( $this->arc2config );
@@ -323,20 +322,31 @@ rkJggg==
 		return $this->addTriples( $parser->getTriples() );
 	}
 
-	function addBnodePrefix( $uri ) 
+	/**
+	 * Replace bnodes shorthand with configured bnodeprefix in URI
+	 *
+	 * @param string $uri
+	 */
+	function addBnodePrefix( $uri )
 	{
 		return preg_replace( "/^_:/", "_:g" . $this->bnodeprefix . "-", $uri );
 	}
 
+	/**
+	 * Add triples to the graph from an ARC2 datastrcture. This is the inverse of toArcTriples.
+	 *
+	 * @see ARC2
+	 * @see toArcTriples
+	 */
 	function addTriples( $triples, $aliases = array(), $map = array() )
 	{
 		$this->bnodeprefix++;
 
 		foreach( $triples as $t )
 		{
-			if( $this->workAround4StoreBNodeBug ) 
+			if( $this->workAround4StoreBNodeBug )
 			{
-				if( $t["s"] == "_:NULL" || $t["o"] == "_:NULL" ) { continue; } 
+				if( $t["s"] == "_:NULL" || $t["o"] == "_:NULL" ) { continue; }
 			}
 			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
@@ -353,6 +363,11 @@ rkJggg==
 		return sizeof( $triples );
 	}
 
+	/**
+	 * Add a single triple directly to the graph. Only addCompressedTriple accepts shortended URIs, eg foaf:name.
+	 *
+	 * @see addTriple
+	 */
 	function addCompressedTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
 		$s = $this->expandURI( $s );
@@ -365,14 +380,19 @@ rkJggg==
 		$this->addTriple( $s,$p,$o,$o_datatype,$o_lang,$aliases );
 	}
 
+	/**
+	 * Add a single triple directly to the graph.
+	 *
+	 * @see addCompressedTriple
+	 */
 	function addTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
 	{
 		if( $this->workAround4StoreBNodeBug )
 		{
-			if( $s == "_:NULL" || $o == "_:NULL" ) { return; } 
+			if( $s == "_:NULL" || $o == "_:NULL" ) { return; }
 		}
 		$s = $this->addBnodePrefix( $this->cleanURI( $s ) );
-		if( $o_datatype != "literal" )
+		if( !isset($o_datatype) || $o_datatype == "" )
 		{
 			$o = $this->addBnodePrefix( $this->cleanURI( $o ) );
 		}
@@ -396,6 +416,9 @@ rkJggg==
 		$this->t["op"][$o][$p][] = $s;
 	}
 
+	/**
+	 * Returns all triples of which this resource is the subject in Arc2's internal triples format.
+	 */
 	public function toArcTriples()
 	{
 		$arcTriples = array();
@@ -406,9 +429,16 @@ rkJggg==
 		return $arcTriples;
 	}
 
+	/**
+	 * Returns the serialization of the entire RDF graph in memory using one of Arc2's serializers. By default the RDF/XML serializer is used, but others (try passing "Turtle" or "NTriples") can be used - see the Arc2 documentation.
+	 */
 	public function serialize( $type = "RDFXML" )
 	{
-		$serializer = ARC2::getSer( $type, array( "ns" => $this->ns ) );
+		$ns = $this->ns;
+		unset( $ns["dct"] ); 
+		// use dcterms for preference. duplicates seem to cause
+		// bugs in the serialiser
+		$serializer = ARC2::getSer( $type, array( "ns" => $ns ));
 		return $serializer->getSerializedTriples( $this->toArcTriples() );
 	}
 
@@ -418,66 +448,96 @@ rkJggg==
 		return preg_replace( '/^(https?:\/\/[^:\/]+):80\//','$1/', $uri );
 	}
 
+	/**
+	 * Utility method (shamelessly ripped off from EasyRDF). Returns the primary topic of the first URL that was loaded. Handy when working with FOAF.
+	 */
 	public function primaryTopic( $uri = null )
 	{
 		if( !$uri ) { $uri = $this->firstGraphURI; }
 		if( !$uri ) { return new Graphite_Null($this->g); }
-		$this->forceString( $uri );
 
-		return $this->resource( $uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
+		return $this->resource( (string)$uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
+	/**
+	 * Add an additional namespace alias to the Graphite instance.
+	 *
+	 * @param string $short Must be a valid xmlns prefix. urn, http, doi, https, ftp, mail, xmlns, file and data are reserved.
+	 * @param string $long  Must be either a valid URI or an empty string.
+	 *
+	 * @todo URI validation.
+	 * @see http://www.w3.org/TR/REC-xml-names/#ns-decl
+	 * @throws InvalidArgumentException
+	 */
 	public function ns( $short, $long )
 	{
-		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/', $short ) )
+		if (empty($short)) {
+			throw new InvalidArgumentException("A valid xmlns prefix is required.");
+		}
+
+		if( preg_match( '/^(urn|doi|http|https|ftp|mailto|xmlns|file|data)$/i', $short ) )
 		{
-			print "<ul><li>Setting a namespace called '$short' is just asking for trouble. Abort.</li></ul>";
-			exit;
+			throw new InvalidArgumentException("Setting a namespace called '$short' is just asking for trouble. Abort.");
 		}
 		$this->ns[$short] = $long;
 	}
 
+	/**
+	 * Get the resource with given URI. $uri may be abbreviated to "namespace:value".
+	 *
+	 * @return Graphite_Resource
+	 */
 	public function resource( $uri )
 	{
-		$this->forceString( $uri );
-		$uri = $this->expandURI( $uri );
+		$uri = $this->expandURI( (string)$uri );
 		return new Graphite_Resource( $this, $uri );
 	}
 
+	/**
+	 * Return a list of all resources loaded, with the rdf:type given. eg. $graph-&gt;allOfType( "foaf:Person" )
+	 */
 	public function allOfType( $uri )
 	{
 		return $this->resource( $uri )->all("-rdf:type");
 	}
 
+	/**
+	 * Translate a URI from the long form to any shorthand version known.
+	 * IE: http://xmlns.com/foaf/0.1/knows => foaf:knows
+	 */
 	public function shrinkURI( $uri )
 	{
-		$this->forceString( $uri );
-		if( $uri == "" ) { return "* This Document *"; }
+		if( (string)$uri == "" ) { return "* This Document *"; }
 		foreach( $this->ns as $short=>$long )
 		{
-			if( substr( $uri, 0, strlen($long) ) == $long )
+			if( substr( (string)$uri, 0, strlen($long) ) == $long )
 			{
-				return $short.":".substr( $uri, strlen($long ));
+				return $short.":".substr( (string)$uri, strlen($long ));
 			}
 		}
-		return $uri;
+		return (string)$uri;
 	}
 
+	/**
+	 * Translate a URI from the short form to any long version known.
+	 * IE:  foaf:knows => http://xmlns.com/foaf/0.1/knows
+	 */
 	public function expandURI( $uri )
 	{
-		$this->forceString( $uri );
-		if( preg_match( '/:/', $uri ) )
+		if( preg_match( '/:/', (string)$uri ) )
 		{
-			list( $ns, $tag ) = preg_split( "/:/", $uri, 2 );
+			list( $ns, $tag ) = preg_split( "/:/", (string)$uri, 2 );
 			if( isset($this->ns[$ns]) )
 			{
 				return $this->ns[$ns].$tag;
 			}
 		}
-		return $uri;
+		return (string)$uri;
 	}
 
-
+	/**
+	 * Return a list of all resources in the graph which are the subject of at least one triple.
+	 */
 	public function allSubjects()
 	{
 		$r = new Graphite_ResourceList( $this );
@@ -488,6 +548,9 @@ rkJggg==
 		return $r;
 	}
 
+	/**
+	 * Return a list of all resources in the graph which are the object of at least one triple.
+	 */
 	public function allObjects()
 	{
 		$r = new Graphite_ResourceList( $this );
@@ -498,6 +561,15 @@ rkJggg==
 		return $r;
 	}
 
+	/**
+	 * Create a pretty HTML dump of the current resource. Handy for debugging halfway through hacking something.
+	 *
+	 * $options is an optional array of flags to modify how dump() renders HTML. dumpText() does the same think with ASCII indention instead of HTML markup, and is intended for debugging command-line scripts.
+	 *
+	 * "label"=> 1 - add a label for the URI, and the rdf:type, to the top of each resource box, if the information is in the current graph.
+	 * "labeluris"=> 1 - when listing the resources to which this URI relates, show them as a label, if possible, rather than a URI. Hovering the mouse will still show the URI.</div>
+	 * "internallinks"=> 1 - instead of linking directly to the URI, link to that resource's dump on the current page (which may or may not be present). This can, for example, make bnode nests easier to figure out.
+	 */
 	public function dump( $options=array() )
 	{
 		$r = array();
@@ -509,6 +581,9 @@ rkJggg==
 		return join("",$r );
 	}
 
+	/**
+	 * @see dump()
+	 */
 	public function dumpText( $options=array() )
 	{
 		$r = array();
@@ -520,860 +595,21 @@ rkJggg==
 		return join("\n",$r );
 	}
 
+    /** @deprecated All graphite objects should implement __toString() */
 	public function forceString( &$uri )
 	{
-		if( is_object( $uri ) ) { $uri = $uri->toString(); }
-		return $uri;
+		return (string)$uri;
 	}
 }
 
-class Graphite_Node
-{
-	function __construct( $g )
-	{
-		$this->g = $g;
-	}
-	function isNull() { return false; }
-	function has() { return false; }
-	function get() { return new Graphite_Null($this->g); }
-	function type() { return new Graphite_Null($this->g); }
-	function label() { return "[UNKNOWN]"; }
-	function hasLabel() { return false; }
-	function all() { return new Graphite_ResourceList($this->g, array()); }
-	function types() { return $this->all(); }
-	function relations() { return $this->all(); }
-	function load() { return 0; }
-	function loadSameAs() { return 0; }
-	function loadSameAsOrg($prefix) { return 0; }
-	function loadDataGovUKBackLinks() { return 0; }
-
-	function dumpText() { return "Non existant Node"; }
-	function dump() { return "<div style='padding:0.5em; background-color:lightgrey;border:dashed 1px grey;'>Non-existant Node</div>"; }
-	function nodeType() { return "#node"; }
-	function __toString() { return "[NULL]"; }
-	function toString() { return $this->__toString(); }
-	function datatype() { return null; } 
-	function language() { return null; } 
-
-
-	protected function parsePropertyArg( $arg )
-	{
-		if( is_a( $arg, "Graphite_Resource" ) )
-		{
-			if( is_a( $arg, "Graphite_InverseRelation" ) )
-			{
-				$this->g->forceString( $arg );
-				return array( "op", "$arg" );
-			}
-			$this->g->forceString( $arg );
-			return array( "sp", "$arg" );
-		}
-
-		$set = "sp";
-		if( substr( $arg,0,1) == "-" )
-		{
-			$set = "op";
-			$arg = substr($arg,1);
-		}
-		return array( $set, $this->g->expandURI( "$arg" ) );
-	}
-}
-class Graphite_Null extends Graphite_Node
-{
-	function nodeType() { return "#null"; }
-	function isNull() { return true; }
-}
-class Graphite_Literal extends Graphite_Node
-{
-	function __construct( $g, $triple )
-	{
-		$this->g = $g;
-		$this->triple = $triple;
-		$this->v = $triple["v"];
-	}
-
-	function __toString() { return $this->triple["v"]; }
-	function datatype() { return @$this->triple["d"]; }
-	function language() { return @$this->triple["l"]; }
-
-	function dumpValueText()
-	{
-		$r = '"'.$this->v.'"';
-		if( isset($this->triple["l"]) && $this->triple["l"])
-		{
-			$r.="@".$this->triple["l"];
-		}
-		if( isset($this->triple["d"]) )
-		{
-			$r.="^^".$this->g->shrinkURI($this->triple["d"]);
-		}
-		return $r;
-	}
-
-	function dumpValueHTML()
-	{
-		$v = htmlspecialchars( $this->triple["v"],ENT_COMPAT,"UTF-8" );
-
-		$v = preg_replace( "/\t/", "<span class='special_char' style='font-size:70%'>[tab]</span>", $v );
-		$v = preg_replace( "/\n/", "<span class='special_char' style='font-size:70%'>[nl]</span><br />", $v );
-		$v = preg_replace( "/\r/", "<span class='special_char' style='font-size:70%'>[cr]</span>", $v );
-		$v = preg_replace( "/  +/e", "\"<span class='special_char' style='font-size:70%'>\".str_repeat(\"␣\",strlen(\"$0\")).\"</span>\"", $v );
-		$r = '"'.$v.'"';
-
-		if( isset($this->triple["l"]) && $this->triple["l"])
-		{
-			$r.="@".$this->triple["l"];
-		}
-		if( isset($this->triple["d"]) )
-		{
-			$r.="^^".$this->g->shrinkURI($this->triple["d"]);
-		}
-		return $r;
-	}
-
-	function nodeType()
-	{
-		if( isset($this->triple["d"]) )
-		{
-			return $this->triple["d"];
-		}
-		return "#literal";
-	}
-
-	function dumpValue()
-	{
-		return "<span style='color:blue'>".$this->dumpValueHTML()."</span>";
-	}
-
-	function link() { return $this->__toString(); }
-	function prettyLink() { return $this->__toString(); }
-}
-
-class Graphite_Resource extends Graphite_Node
-{
-	function __construct( $g, $uri )
-	{
-		$this->g = $g;
-		$this->g->forceString( $uri );
-		$this->uri = $uri;
-	}
-
-	public function get( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$l = $this->all( $args );
-		if( sizeof( $l ) == 0 ) { return new Graphite_Null($this->g); }
-		return $l[0];
-	}
-
-	public function getLiteral( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$l = $this->all( $args );
-		if( sizeof( $l ) == 0 ) { return; }
-		return $l[0]->toString();
-	}
-	# getString deprecated in favour of getLiteral 
-	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
-
-	public function getDatatype( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$l = $this->all( $args );
-		if( sizeof( $l ) == 0 ) { return; }
-		return $l[0]->datatype();
-	}
-	public function getLanguage( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$l = $this->all( $args );
-		if( sizeof( $l ) == 0 ) { return; }
-		return $l[0]->language();
-	}
-
-	public function allString( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$l = array();
-		foreach( $this->all( $args ) as $item )
-		{
-			$l []= $item->toString();
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function has(  /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		foreach( $args as $arg )
-		{
-			list( $set, $relation_uri ) = $this->parsePropertyArg( $arg );
-			if( isset($this->g->t[$set][$this->uri])
-			 && isset($this->g->t[$set][$this->uri][$relation_uri]) )
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public function all(  /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-		$l = array();
-		$done = array();
-		foreach( $args as $arg )
-		{
-			list( $set, $relation_uri ) = $this->parsePropertyArg( $arg );
-			if( !isset($this->g->t[$set][$this->uri])
-			 || !isset($this->g->t[$set][$this->uri][$relation_uri]) )
-			{
-				continue;
-			}
-
-			foreach( $this->g->t[$set][$this->uri][$relation_uri] as $v )
-			{
-				if( is_array( $v ) )
-				{
-					$l []= new Graphite_Literal( $this->g, $v );
-				}
-				else if( !isset($done[$v]) )
-				{
-					$l []= new Graphite_Resource( $this->g, $v );
-					$done[$v] = 1;
-				}
-			}
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function relations()
-	{
-		$r = array();
-		if( isset( $this->g->t["sp"][$this->uri] ) )
-		{
-			foreach( array_keys( $this->g->t["sp"][$this->uri] ) as $pred )
-			{
-				$r []= new Graphite_Relation( $this->g, $pred );
-			}
-		}
-		if( isset( $this->g->t["op"][$this->uri] ) )
-		{
-			foreach( array_keys( $this->g->t["op"][$this->uri] ) as $pred )
-			{
-				$r []= new Graphite_InverseRelation( $this->g, $pred );
-			}
-		}
-
-		return new Graphite_ResourceList($this->g,$r);
-	}
-
-	public function toArcTriples( $bnodes = true )
-	{
-		$arcTriples = array();
-		$bnodes_to_add = array();
-
-		$s = $this->uri;
-		$s_type = "uri";
-		if( preg_match( '/^_:/', $s ) )
-		{
-			$s_type = "bnode";
-		}
-
-		foreach( $this->g->t["sp"][$s] as $p => $os )
-		{
-			$p = $this->g->expandURI( $p );
-			$p_type = "uri";
-			if( preg_match( '/^_:/', $p ) )
-			{
-				$p_type = "bnode";
-			}
-
-			foreach( $os as $o )
-			{
-				$o_lang = null;
-				$o_datatype = null;
-				if( is_array( $o ))
-				{
-					$o_type = "literal";
-					if( isset( $o["l"] ) && $o["l"] )
-					{
-						$o_lang = $o["l"];
-					}
-					if( isset( $o["d"] ) )
-					{
-						$o_datatype = $this->g->expandURI( $o["d"] );
-					}
-					$o = $o["v"];
-				}
-				else
-				{
-					$o = $this->g->expandURI( $o );
-					$o_type = "uri";
-					if( preg_match( '/^_:/', $o ) )
-					{
-						$o_type = "bnode";
-						$bnodes_to_add[] = $o;
-					}
-				}
-				$triple = array(
-					"s" => $s,
-					"s_type" => $s_type,
-					"p" => $p,
-					"p_type" => $p_type,
-					"o" => $o,
-					"o_type" => $o_type,
-				);
-				$triple["o_datatype"] = $o_datatype;
-				$triple["o_lang"] = $o_lang;
-
-				$arcTriples[] = $triple;
-			}
-		}
-
-		if( $bnodes )
-		{
-			foreach( array_unique( $bnodes_to_add ) as $bnode )
-			{
-				$arcTriples = array_merge( $arcTriples, $this->g->resource( $bnode )->toArcTriples() );
-			}
-		}
-		return $arcTriples;
-	}
-
-	public function serialize( $type = "RDFXML" )
-	{
-		$serializer = ARC2::getSer( $type, array( "ns" => $this->g->ns ) );
-		return $serializer->getSerializedTriples( $this->toArcTriples() );
-	}
-
-	public function load()
-	{
-		return $this->g->load( $this->uri );
-	}
-
-	public function loadSameAsOrg( $prefix )
-	{
-		$sameasorg_uri = "http://sameas.org/rdf?uri=".urlencode( $this->uri );
-		$n = $this->g->load( $sameasorg_uri );
-		$n+= $this->loadSameAs( $prefix );
-		return $n;
-	}
-
-	function loadDataGovUKBackLinks()
-	{
-		$backurl = "http://backlinks.psi.enakting.org/resource/rdf/".$this->uri;
-		return $this->g->load( $backurl, array(), array( $this->uri=>1 ) );
-	}
-
-	public function loadSameAs( $prefix=null )
-	{
-		$cnt = 0;
-		foreach( $this->all( "owl:sameAs" ) as $sameas )
-		{
-			$this->g->forceString( $sameas );
-			if( $prefix && substr( $sameas, 0, strlen($prefix )) != $prefix )
-			{
-				continue;
-			}
-
-			$cnt += $this->g->load( $sameas, array( $sameas=>$this->uri ) );
-		}
-		return $cnt;
-	}
-
-	public function type()
-	{
-		return $this->get( "rdf:type" );
-	}
-
-	public function types()
-	{
-		return $this->all( "rdf:type" );
-	}
-
-	public function isType( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		foreach( $this->allString( 'rdf:type' ) as $type )
-		{
-			foreach( $args as $arg )
-			{
-				$uri = $this->g->expandURI( $arg );
-				if( $uri == $type ) { return true; }
-			}
-		}
-
-		return false;
-	}
-
-	public function hasLabel()
-	{
-		return $this->has( $this->g->labelRelations() );
-	}
-	public function label()
-	{
-		return $this->getLiteral( $this->g->labelRelations() );
-	}
-
-	public function link()
-	{
-		return "<a title='".$this->uri."' href='".$this->uri."'>".$this->uri."</a>";
-	}
-	public function prettyLink()
-	{
-		if( substr( $this->uri, 0, 4 ) == "tel:" )
-		{
-			$label = substr( $this->uri, 4 );
-			if( $this->hasLabel() ) { $label = $this->label(); }
-			$icon = "";
-			$iconURL = $this->g->telIcon();
-			if( $iconURL != "" );
-			{
-				$icon = 
-"<a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='$iconURL' /></a>";
-			}
-			return 
-"<span style='white-space:nowrap'>$icon<a title='".$this->uri."' href='".$this->uri."'>$label</a></span>";
-
-			# icon adapted from cc-by icon at http://pc.de/icons/
-		}
-
-		if( substr( $this->uri, 0, 7 ) == "mailto:" )
-		{
-			$label = substr( $this->uri, 7 );
-			if( $this->hasLabel() ) { $label = $this->label(); }
-			$icon = "";
-			$iconURL = $this->g->mailtoIcon();
-			if( $iconURL != "" );
-			{
-				$icon = 
-"<a title='".$this->uri."' href='".$this->uri."'><img style='padding-right:0.2em;' src='$iconURL' /></a>";
-			}
-			return 
-"<span style='white-space:nowrap'>$icon<a title='".$this->uri."' href='".$this->uri."'>$label</a></span>";
-			# icon adapted from cc-by icon at http://pc.de/icons/
-		} 
-
-		$label = $this->uri;
-		if( $this->hasLabel() ) { $label = $this->label(); }
-		return "<a title='".$this->uri."' href='".$this->uri."'>$label</a>";
-	}
-
-	public function dumpText()
-	{
-		$r = "";
-		$plist = array();
-		foreach( $this->relations() as $prop )
-		{
-			$olist = array();
-			foreach( $this->all( $prop ) as $obj )
-			{
-				$olist []= $obj->dumpValueText();
-			}
-			$arr = "->";
-			if( is_a( $prop, "Graphite_InverseRelation" ) ) { $arr = "<-"; }
-			$plist []= "$arr ".$this->g->shrinkURI($prop)." $arr ".join( ", ",$olist );
-		}
-		return $this->g->shrinkURI($this->uri)."\n    ".join( ";\n    ", $plist )." .\n";
-	}
-
-	public function dump( $options = array() )
-	{
-		$r = "";
-		$plist = array();
-		foreach( $this->relations() as $prop )
-		{
-			$olist = array();
-			$all = $this->all( $prop );
-			foreach( $all as $obj )
-			{
-				$olist []= $obj->dumpValue($options);
-			}
-			if( is_a( $prop, "Graphite_InverseRelation" ) )
-			{
-				$pattern = "<span style='font-size:130%%'>&larr;</span> is <a title='%s' href='%s' style='text-decoration:none;color: green'>%s</a> of <span style='font-size:130%%'>&larr;</span> %s";
-			}
-			else
-			{
-				$pattern = "<span style='font-size:130%%'>&rarr;</span> <a title='%s' href='%s' style='text-decoration:none;color: green'>%s</a> <span style='font-size:130%%'>&rarr;</span> %s";
-			}
-			$this->g->forceString( $prop );
-			$plist []= sprintf( $pattern, $prop, $prop, $this->g->shrinkURI($prop), join( ", ",$olist ));
-		}
-		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='text-align:left;font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
-		if( isset($options["label"] ) )
-		{
-			$label = $this->label();
-			if( $label == "[NULL]" ) { $label = ""; } else { $label = "<strong>$label</strong>"; }
-			if( $this->has( "rdf:type" ) )
-			{
-				if( $this->get( "rdf:type" )->hasLabel() )
-				{
-					$typename = $this->get( "rdf:type" )->label();
-				}
-				else
-				{
-					$bits = preg_split( "/[\/#]/", @$this->get( "rdf:type" )->uri );
-					$typename = array_pop( $bits );
-					$typename = preg_replace( "/([a-z])([A-Z])/","$1 $2",$typename );
-				}
-				$r .= preg_replace( "/>a ([AEIOU])/i", ">an $1", "<div style='float:right'>a $typename</div>" );
-			}
-			if( $label != "" ) { $r.="<div>$label</div>"; }
-		}
-		$r.= " <!-- DUMP:".$this->uri." -->\n <div><a title='".$this->uri."' href='".$this->uri."' style='text-decoration:none'>".$this->g->shrinkURI($this->uri)."</a></div>\n";
-		$r.="  <div style='padding-left: 3em'>\n  <div>".join( "</div>\n  <div>", $plist )."</div></div><div style='clear:both;height:1px; overflow:hidden'>&nbsp;</div></div>";
-		return $r;
-	}
-
-	function __toString() { return $this->uri; }
-	function dumpValue($options=array())
-	{
-		$label = $this->dumpValueText();
-		if( $this->hasLabel() && @$options["labeluris"] )
-		{
-			$label = $this->label();
-		}
-		$href = $this->uri;
-		if( @$options["internallinks"] )
-		{
-			$href = "#".htmlentities($this->uri);
-		}
-		return "<a href='".$href."' title='".$this->uri."' style='text-decoration:none;color:red'>".$label."</a>";
-	}
-	function dumpValueText() { return $this->g->shrinkURI( $this->uri ); }
-	function nodeType() { return "#resource"; }
-
-	function prepareDescription()
-	{
-		return new Graphite_Description( $this );
-	}
-}
-
-class Graphite_Relation extends Graphite_Resource
-{
-	function nodeType() { return "#relation"; }
-}
-
-class Graphite_InverseRelation extends Graphite_Relation
-{
-	function nodeType() { return "#inverseRelation"; }
-}
-class Graphite_ResourceList extends ArrayIterator
-{
-
-	function __construct( $g, $a=array() )
-	{
-		$this->g = $g;
-		$this->a = $a;
-		if( $a instanceof Graphite_ResourceList )
-		{
-			print "<li>Graphite warning: passing a Graphite_ResourceList as the array passed to new Graphite_ResourceList will make weird stuff happen.</li>";
-		}
-		parent::__construct( $this->a );
-	}
-
-
-	function join( $str )
-	{
-		$first = 1;
-		$l = array();
-		foreach( $this as $resource )
-		{
-			if( !$first ) { $l []= $str; }
-			$this->g->forceString( $resource );
-			$l []= $resource;
-			$first = 0;
-		}
-		return join( "", $l );
-	}
-
-	function dump()
-	{
-		$l = array();
-		foreach( $this as $resource )
-		{
-			$l [] = $resource->dump();
-		}
-		return join( "", $l );
-	}
-
-	public function duplicate()
-	{
-		$l = array();
-		foreach( $this as $resource ) { $l []= $resource; }
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function sort( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		global $graphite_sort_args;
-		$graphite_sort_args = array();
-		foreach( $args as $arg )
-		{
-			if( $arg instanceof Graphite_Resource ) { $arg = $arg->toString(); }
-			$graphite_sort_args [] = $arg;
-		}
-
-		$l = array();
-		foreach( $this as $resource ) { $l []= $resource; }
-		usort($l, "graphite_sort_list_cmp" );
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function uasort( $cmp )
-	{
-		usort($this->a, $cmp );
-	}
-
-	public function get( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-		$l = array();
-		foreach( $this as $resource )
-		{
-			$l [] = $resource->get( $args );
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-
-	
-	public function getLiteral( /* List */)
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-		$l = array();
-		foreach( $this as $resource )
-		{
-			$l [] = $resource->getLiteral( $args );
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-	# getString deprecated in favour of getLiteral 
-	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
-
-	public function label()
-	{
-		$l = array();
-		foreach( $this as $resource )
-		{
-			$l [] = $resource->label();
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function link() 
-	{
-		$l = array();
-		foreach( $this as $resource )
-		{
-			$l [] = $resource->link();
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function prettyLink() 
-	{
-		$l = array();
-		foreach( $this as $resource )
-		{
-			$l [] = $resource->prettyLink();
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-	
-
-	public function load()
-	{
-		$n = 0;
-		foreach( $this as $resource )
-		{
-			$n += $resource->load();
-		}
-		return $n;
-	}
-
-	public function allString( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-		$l = array();
-		$done = array();
-		foreach( $this as $resource )
-		{
-			$all = $resource->all( $args );
-			foreach( $all as $to_add )
-			{
-				if( isset($done[$to_add->toString()]) ) { continue; }
-				$l []= $to_add->toString();
-				$done[$to_add->toString()] = 1;
-			}
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	public function all( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-		$l = array();
-		$done = array();
-		foreach( $this as $resource )
-		{
-			$all = $resource->all( $args );
-			foreach( $all as $to_add )
-			{
-				if( isset($done[$to_add->toString()]) ) { continue; }
-				$l []= $to_add;
-				$done[$to_add->toString()] = 1;
-			}
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	function append( $x /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$list = $this->duplicate();
-		foreach( $args as $arg )
-		{
-			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			$list [] = $arg;
-		}
-		return $list;
-	}
-
-	function distinct()
-	{
-		$l= array();
-		$done = array();
-		foreach( $this as $resource )
-		{
-			if( isset( $done[$resource->toString()] ) ) { continue; }
-			$l [] = $resource;
-			$done[$resource->toString()]=1;
-		}
-		return new Graphite_ResourceList($this->g,$l);
-	}
-
-	function union( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$list = new Graphite_ResourceList($this->g);
-		$done = array();
-		foreach( $this as $resource )
-		{
-			if( isset( $done[$resource->toString()] ) ) { continue; }
-			$list [] = $resource;
-			$done[$resource->toString()]=1;
-		}
-		foreach( $args as $arg )
-		{
-			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			if( isset( $done[$arg->toString()] ) ) { continue; }
-			$list [] = $arg;
-			$done[$arg->toString()]=1;
-		}
-		return $list;
-	}
-
-	function intersection( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$list = new Graphite_ResourceList($this->g,array());
-		$seen = array();
-		foreach( $this as $arg )
-		{
-			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			$seen[$arg->toString()]=1;
-		}
-		foreach( $args as $arg )
-		{
-			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			if( ! isset($seen[$arg->toString()]) ) { continue; }
-			$list [] = $arg;
-		}
-		return $list;
-	}
-
-	function except( /* List */ )
-	{
-		$args = func_get_args();
-		if( $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
-		if( is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
-
-		$list = new Graphite_ResourceList($this->g,array());
-		$exclude = array();
-		foreach( $args as $arg )
-		{
-			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			$exclude[$arg->toString()]=1;
-		}
-		foreach( $this as $arg )
-		{
-			if( ! $arg instanceof Graphite_Resource ) { $arg = $this->g->resource( $arg ); }
-			if( isset($exclude[$arg->toString()]) ) { continue; }
-			$list [] = $arg;
-		}
-		return $list;
-	}
-
-	function allOfType( $uri )
-	{
-		$list = new Graphite_ResourceList( $this->g, array() );
-		foreach( $this as $item )
-		{
-			if( $item->isType( $uri ) )
-			{
-				$list [] = $item;
-			}
-		}
-		return $list;
-	}
-}
+require_once 'Graphite/Node.php';
+require_once 'Graphite/Null.php';
+require_once 'Graphite/Literal.php';
+require_once 'Graphite/Resource.php';
+require_once 'Graphite/Relation.php';
+require_once 'Graphite/InverseRelation.php';
+require_once 'Graphite/ResourceList.php';
+require_once 'Graphite/Description.php';
 
 function graphite_sort_list_cmp( $a, $b )
 {
@@ -1390,337 +626,6 @@ function graphite_sort_list_cmp( $a, $b )
 }
 
 
-# A Graphite Description is an object to describe the routes of attributes
-# which we wish to use to describe a specific resource, and to allow that
-# to be nicely expressed in JSON.
 
-class Graphite_Description
-{
-	var $graph;
-	var $resource;
-	var $routes = array();
-	var $tree = array(
-		"+" => array(),
-		"-" => array() );
-	# header, footer
-
-	function __construct( $resource )
-	{
-		$this->graph = $resource->g;
-		$this->resource = $resource;	
-	}
-
-	function addRoute( $route )
-	{
-		$this->routes[$route] = true;
-		$preds = preg_split( '/\//', $route );
-		$treeptr = &$this->tree;
-		foreach( $preds as $pred )
-		{
-			$dir = "+";
-			if( substr($pred,0,1) == "-" ) { $pred = substr($pred,1); $dir = "-"; }
-			if( !isset( $treeptr[$dir][$pred] ) ) 
-			{
-				$treeptr[$dir][$pred] = array( "+" => array(), "-" => array() ); 
-			}
-			$treeptr = &$treeptr[$dir][$pred];
-		}
-	}
-
-	function toDebug()
-	{
-		$json = array();
-		$this->_jsonify( $this->tree, $this->resource, $json );
-
-		return print_r( $json, 1 );
-	}
-
-	function toJSON()
-	{
-		$json = array();
-		$this->_jsonify( $this->tree, $this->resource, $json );
-
-		return json_encode( $json );
-	}
-
-	function _jsonify( $tree, $resource, &$json )
-	{
-		foreach( $resource->relations() as $relation )
-		{
-			$code = $this->graph->shrinkURI( $relation );
-			$jsonkey = $code;
-			$dir = "+";
-			if( $relation->nodeType() == "#inverseRelation" ) 
-			{ 
-				$dir = "-"; 
-				$jsonkey = "$jsonkey of"; 
-			}
-			if( !isset($tree[$dir]["*"]) && !isset($tree[$dir][$code]) ) { continue; }
-
-			foreach( $resource->all( $relation ) as $value )
-			{
-				if( is_a( $value, "Graphite_Literal" ) )
-				{
-					$json[$jsonkey][] = $value->toString();
-				}
-				else
-				{	
-					$subjson = array();
-					$uri = $value->toString();
-					if( substr( $uri,0,2 ) != "_:" ) { $subjson["_uri"] = $uri; }
-					if( isset( $tree[$dir][$code]) )
-					{
-						$this->_jsonify( $tree[$dir][$code], $value, $subjson );
-					}
-					if( isset( $tree[$dir]["*"]) )
-					{
-						$this->_jsonify( $tree[$dir]["*"], $value, $subjson );
-					}
-					$json[$jsonkey][] = $subjson;
-				}
-			}
-		}
-	}
-
-	function toGraph()
-	{
-		$new_graph = new Graphite();
-		$this->_tograph( $this->tree, $this->resource, $new_graph );
-		return $new_graph;
-	}
-
-	function _tograph( $tree, $resource, &$new_graph )
-	{
-		foreach( $resource->relations() as $relation )
-		{
-			$code = $this->graph->shrinkURI( $relation );
-			$dir = "+";
-			if( $relation->nodeType() == "#inverseRelation" ) 
-			{ 
-				$dir = "-"; 
-			}
-
-			if( !isset($tree[$dir]["*"]) && !isset($tree[$dir][$code]) ) { continue; }
-
-			foreach( $resource->all( $relation ) as $value )
-			{
-				if( is_a( $value, "Graphite_Literal" ) )
-				{
-					$new_graph->addTriple( 
-						$resource->toString(),
-						$relation->toString(),
-						$value->toString(),
-						$value->datatype(),
-						$value->language() );
-				}
-				else
-				{	
-					if( isset( $tree[$dir][$code]) )
-					{
-						$this->_tograph( $tree[$dir][$code], $value, $new_graph );
-					}
-					if( isset( $tree[$dir]["*"]) )
-					{
-						$this->_tograph( $tree[$dir]["*"], $value, $new_graph );
-					}
-					if( $dir == "+" )
-					{
-						$new_graph->addTriple( 
-							$resource->toString(),
-							$relation->toString(),
-							$value->toString() );
-					}
-					else
-					{
-						$new_graph->addTriple( 
-							$value->toString(),
-							$relation->toString(),
-							$resource->toString() );
-					}
-				}
-			}
-		}
-	}
-
-	function loadSPARQL( $endpoint, $debug = false )
-	{
-		$unionbits = array();
-		$conbits = array();
-		$unionbits = $this->_toSPARQL( $this->tree, "", null, "", $conbits );
-		$n = 0;
-		foreach( $unionbits as $unionbit )
-		{
-			$sparql = "CONSTRUCT { ".join( " . ", $conbits )." } WHERE { $unionbit }";
-			if( $debug || @$_GET["_graphite_debug"] ) { 
-				print "<tt>\n\n".htmlspecialchars($sparql)."</tt>\n\n";
-			}
-			$n+=$this->graph->loadSPARQL( $endpoint, $sparql );
-		}
-		return $n;
-	}
-
-	function _toSPARQL($tree, $suffix, $in_dangler = null, $sparqlprefix = "", &$conbits )
-	{
-		$unionbits = array();
-		if( !isset( $in_dangler ) )
-		{
-			$in_dangler = "<".$this->resource->toString().">";
-		}
-
-		$i = 0;	
-		foreach( $tree as $dir=>$routes )
-		{
-			if( sizeof($routes) == 0 ) { continue; }
-
-			$pres = array();
-			if( isset($routes["*"]) )
-			{
-				$sub = "?s".$suffix."_".$i;
-				$pre = "?p".$suffix."_".$i;
-				$obj = "?o".$suffix."_".$i;
-	
-				if( $dir == "+" )
-				{
-					$out_dangler = $obj;
-					$sub = $in_dangler;
-				}
-				else # inverse
-				{
-					$out_dangler = $sub;
-					$obj = $in_dangler;
-				}
-
-				$sparql = "$sparqlprefix $sub $pre $obj .";
-				if( isset( $routes["*"] ) )
-				{
-					$bits_from_routes = $this->_toSPARQL( $routes["*"], $suffix."_".$i, $out_dangler, "", $conbits );
-					$i++;
-					foreach( $bits_from_routes as $bit )
-					{
-						$sparql .= " OPTIONAL { $bit }";
-					}
-				}
-				$unionbits []= $sparql;
-				$conbits []= "$sub $pre $obj";
-
-				foreach( $routes as $pred=>$route )
-				{
-					if( $pred == "*" ) { continue; }
-
-					$pre = "<".$this->graph->expandURI( $pred ).">";
-
-					$bits_from_routes = $this->_toSPARQL( $route, $suffix."_".$i, $out_dangler, "$sparqlprefix $sub $pre $obj .", $conbits );
-					$i++;
-					foreach( $bits_from_routes as $bit )
-					{
-						$unionbits []= $bit;
-					}
-				}
-			}
-			else
-			{
-				foreach( array_keys( $routes ) as $pred )
-				{
-					$sub = "?s".$suffix."_".$i;
-					$pre = "<".$this->graph->expandURI( $pred ).">";
-					$obj = "?o".$suffix."_".$i;
-	
-					if( $dir == "+" )
-					{
-						$out_dangler = $obj;
-						$sub = $in_dangler;
-					}
-					else # inverse
-					{
-						$out_dangler = $sub;
-						$obj = $in_dangler;
-					}
-
-					$bits_from_routes = $this->_toSPARQL( $routes[$pred],$suffix."_".$i, $out_dangler, "", $conbits );
-					$i++;
-
-					$sparql = "$sparqlprefix $sub $pre $obj .";
-					foreach( $bits_from_routes as $bit )
-					{
-						$sparql .= " OPTIONAL { $bit }";
-					}
-
-					$unionbits []= $sparql;
-					$conbits []= "$sub $pre $obj";
-
-				}
-			}
-		}
-
-		return $unionbits;
-	} # end _toSPARQL
-
-	function getFormats()
-	{
-		return array(
-			"json"=>"JSON",
-			"nt"=>"RDF (Triples)",
-			"ttl"=>"RDF (Turtle)",
-			"rdf"=>"RDF (XML)",
-			"rdf.html" => "RDF (RDF HTML Debug)",
-		);
-	}
-
-	function handleFormat( $format )
-	{
-		if( $format == 'json' )
-		{
-			if( isset( $_GET['callback'] ) )
-			{
-				header( "Content-type: application/javascript" );
-				print $_GET['callback']."( ".$this->toJSON()." );\n";
-			}
-			else
-			{
-				header( "Content-type: application/json" );
-				print $this->toJSON();
-			}
-
-			return true;
-		}
-
-		if( $format == 'ttl' )
-		{
-			header( "Content-type: text/turtle" );
-			print $this->toGraph()->serialize( "Turtle" );
-			return true;
-		}
-
-		if( $format == 'nt' )
-		{
-			header( "Content-type: text/plain" );
-			print $this->toGraph()->serialize( "NTriples" );
-			return true;
-		}
-
-		if( $format == 'rdf' )
-		{
-			header( "Content-type: application/rdf+xml" );
-			print $this->toGraph()->serialize( "RDFXML" );
-			return true;
-		}
-
-		if( $format == 'rdf.html' )
-		{
-			header( "Content-type: text/html" );
-			print $this->toGraph()->dump();
-			return true;
-		}
-
-		if( $format == 'debug' )
-		{
-			header( "Content-type: text/plain" );
-			print $this->toDebug();
-			return true;
-		}
-
-		return false;
-	}
-}
 
 

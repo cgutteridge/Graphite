@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<project name="Graphite" default="build" basedir=".">
+	<condition property="phpunit.bin" value="phpunit.bat" else="phpunit">
+        <os family="windows"/>
+    </condition>
+
+	<condition property="pear.bin" value="pear.bat" else="pear">
+        <os family="windows"/>
+    </condition>
+
+	<condition property="phpcs.bin" value="phpcs.bat" else="phpcs">
+        <os family="windows"/>
+    </condition>
+
+	<condition property="phpdoc.bin" value="phpdoc.bat" else="phpdoc">
+        <os family="windows"/>
+    </condition>
+
+	<target name="clean" description="Clean up and create artifact directories">
+		<delete dir="${basedir}/lib" />
+		<delete dir="${basedir}/build/api"/>
+		<delete dir="${basedir}/build/code-browser"/>
+		<delete dir="${basedir}/build/coverage"/>
+		<delete dir="${basedir}/build/logs"/>
+		<delete dir="${basedir}/build/phpdox"/>
+		<delete dir="${basedir}/build"/>
+
+		<mkdir dir="${basedir}/lib/" />
+		<mkdir dir="${basedir}/build"/>
+		<mkdir dir="${basedir}/build/api"/>
+		<mkdir dir="${basedir}/build/code-browser"/>
+		<mkdir dir="${basedir}/build/coverage"/>
+		<mkdir dir="${basedir}/build/logs"/>
+		<mkdir dir="${basedir}/build/phpdox"/>
+
+		<exec executable="git">
+			<arg line="clone https://github.com/semsol/arc2.git lib/ARC2" />
+		</exec>
+
+	</target>
+
+	<target name="phpcs-ci" description="Find coding standard violations using PHP_CodeSniffer">
+		<exec executable="${phpcs.bin}" output="/dev/null">
+			<arg value="--report=checkstyle" />
+			<arg value="--report-file=${basedir}/build/logs/checkstyle.xml" />
+			<arg path="${basedir}/Graphite.php" />
+			<arg path="${basedir}/Graphite/" />
+		</exec>
+	</target>
+
+	<target name="phpunit">
+		<exec dir="${basedir}" executable="${phpunit.bin}" failonerror="true">
+			<arg line="tests/"/>
+		</exec>
+	</target>
+
+	<target name="package">
+		<exec dir="${basedir}/build" executable="${pear.bin}" failonerror="true">
+			<arg line="package ../package.xml"/>
+		</exec>
+	</target>
+
+	<target name="lint">
+	  <apply executable="php" failonerror="true">
+	   <arg value="-l" />
+
+	   <fileset dir="${basedir}">
+		<include name="**/*.php" />
+		<modified />
+	   </fileset>
+
+	   <fileset dir="${basedir}/tests">
+		<include name="**/*.php" />
+		<modified />
+	   </fileset>
+	  </apply>
+	 </target>
+
+	<target name="phpdoc" description="Generate API documentation using phpdoc">
+	  <exec executable="${phpdoc.bin}">
+		<arg line="project:run -c phpdoc.dist.xml" />
+	  </exec>
+	</target>
+	 <target name="phpdox"
+			 description="Generate API documentation using phpDox">
+	  <exec executable="phpdox"/>
+	 </target>
+
+	<target name="build" depends="clean,lint,phpdoc,phpunit,phpcs-ci,package"/>
+</project>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.9.2" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+ <name>RDF Graphite</name>
+ <channel>pear.php.net</channel>
+ <summary>An RDF API for PHP</summary>
+ <description>PHP RDF Library</description>
+ <lead>
+  <name>Christopher Gutteridge</name>
+  <user>cgutteridge</user>
+  <email>cjg@ecs.soton.ac.uk</email>
+  <active>yes</active>
+ </lead>
+ <date>2012-03-19</date>
+ <time>19:51:32</time>
+ <version>
+  <release>0.1.6</release>
+  <api>0.1.6</api>
+ </version>
+ <stability>
+  <release>stable</release>
+  <api>stable</api>
+ </stability>
+ <license uri="http://www.gnu.org/licenses/lgpl.html">LGPL</license>
+ <notes>
+Misc fixes
+ </notes>
+ <contents>
+  <dir baseinstalldir="/" name="/">
+   <file baseinstalldir="/" md5sum="568bcf56ed8ed31319d1d9bb23084b1f" name="examples/freeze.php" role="doc" />
+   <file baseinstalldir="/" md5sum="2ada2cb3fd46e99ae89418c3777c3764" name="examples/prettyLink.php" role="doc" />
+   <file baseinstalldir="/" md5sum="2065b9e838c9318b5375468f24fd0c3e" name="examples/to_json.php" role="doc" />
+   <file baseinstalldir="/" md5sum="0937feb3b19e28477b450d8c26ab196d" name="examples/icons/mail.png" role="doc" />
+   <file baseinstalldir="/" md5sum="1b861e154384dabb08b8f4c2f05f5d6d" name="examples/icons/telephone-handset.png" role="doc" />
+   <file baseinstalldir="/" md5sum="3f960e09a58cc570b8b91ccc18edaabe" name="Graphite/Description.php" role="php" />
+   <file baseinstalldir="/" md5sum="fdb01f1dbcca43dcf26705d76dafb6fc" name="Graphite/InverseRelation.php" role="php" />
+   <file baseinstalldir="/" md5sum="050a6b00ace71f262e8e2e34eb2724d4" name="Graphite/Literal.php" role="php" />
+   <file baseinstalldir="/" md5sum="f2b12ba02e32c8aefd250200ec890cf4" name="Graphite/Node.php" role="php" />
+   <file baseinstalldir="/" md5sum="493023a91b8502da40497fab8ce82b85" name="Graphite/Null.php" role="php" />
+   <file baseinstalldir="/" md5sum="118db4644d1831485ec9f81af2201b26" name="Graphite/Relation.php" role="php" />
+   <file baseinstalldir="/" md5sum="39791f076fdcec4bdbc382b797a93ac4" name="Graphite/Resource.php" role="php" />
+   <file baseinstalldir="/" md5sum="5b94b9ca55bbd09cfb86adaad3ff3990" name="Graphite/ResourceList.php" role="php" />
+   <file baseinstalldir="/" md5sum="606b8d70e032759ce603c07ef5180904" name="tests/GraphiteTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="8d6a18f8aeb7464190dce2f877f049ea" name="tests/Graphite_DescriptionTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="c82094da605fce3dab5b58e247d25f60" name="tests/Graphite_InverseRelationTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="664a01b8068801b080adcc780cbcbf76" name="tests/Graphite_LiteralTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="83daeb9979077ce4b0af8adb08609db5" name="tests/Graphite_NodeTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="57c4d6a4252b79e6352dddbd1a6188b9" name="tests/Graphite_NullTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="dcd265817af7a625974832bc7943a9d0" name="tests/Graphite_RelationTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="6dc114f6ca3f996f469191f07ca46d47" name="tests/Graphite_ResourceListTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="f354994187725ffe16495bbdf838852e" name="tests/Graphite_ResourceTest.php" role="test" />
+   <file baseinstalldir="/" md5sum="b5ac5909ee58d6f8c2f565e8000a42f4" name="graphite-docs.html" role="doc" />
+   <file baseinstalldir="/" md5sum="3bf28cd6284bccb39887cd30282fb6bf" name="Graphite.php" role="php" />
+   <file baseinstalldir="/" md5sum="d712c72234c3b329630dc947faab0412" name="README" role="data" />
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5.0.0</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.0b1</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <phprelease />
+ <changelog>
+  <release>
+   <version>
+    <release>0.1.6</release>
+    <api>0.1.6</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2012-03-19</date>
+   <license uri="http://www.gnu.org/licenses/lgpl.html">LGPL</license>
+   <notes>
+Misc fixes
+   </notes>
+  </release>
+ </changelog>
+</package>
