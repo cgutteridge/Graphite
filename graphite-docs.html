@@ -103,9 +103,9 @@
 <dt>$language = $resource-&gt;language();</dt>
 <dd>Returns the language of a literal, if it has one, otherwise null.</dd>
 
-<dt>$string = $resource-&gt;getLiteral( $property );</dt>
-<dt>$string = $resource-&gt;getLiteral( <a href='#resources'>*resource list*</a> );</dt>
-<dd>As for get() but return the result's string value. (getLiteral used to be called "getString", but this is now deprecated in favour of this more appropriate function name)</dd>
+<dt>$string = $resource-&gt;getString( $property );</dt>
+<dt>$string = $resource-&gt;getString( <a href='#resources'>*resource list*</a> );</dt>
+<dd>As for get() but return the result's string value. Shortened version of $resource-&gt;get( $property )-&gt;toString();</dd>
 
 <dt>$boolean = $resource-&gt;has( $property );</dt>
 <dt>$boolean = $resource-&gt;has( <a href='#resources'>*resource list*</a> );</dt>
