@@ -98,7 +98,7 @@ rkJggg==
 		$this->firstGraphURI = null;
 		if( $uri )
 		{
-			$this->load( (string)$uri );
+			$this->load( Graphite::asString($uri) );
 		}
 
 		$this->bnodeprefix = 0;
@@ -220,7 +220,7 @@ rkJggg==
 	 */
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
-		$uri = $this->expandURI( (string)$uri );
+		$uri = $this->expandURI( Graphite::asString($uri) );
 
 		if( substr( $uri,0,5 ) == "data:" )
 		{
@@ -456,7 +456,7 @@ rkJggg==
 		if( !$uri ) { $uri = $this->firstGraphURI; }
 		if( !$uri ) { return new Graphite_Null($this->g); }
 
-		return $this->resource( (string)$uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
+		return $this->resource( Graphite::asString($uri) )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
 	/**
@@ -489,7 +489,7 @@ rkJggg==
 	 */
 	public function resource( $uri )
 	{
-		$uri = $this->expandURI( (string)$uri );
+		$uri = $this->expandURI( Graphite::asString($uri) );
 		return new Graphite_Resource( $this, $uri );
 	}
 
@@ -507,15 +507,15 @@ rkJggg==
 	 */
 	public function shrinkURI( $uri )
 	{
-		if( (string)$uri == "" ) { return "* This Document *"; }
+		if( Graphite::asString($uri) == "" ) { return "* This Document *"; }
 		foreach( $this->ns as $short=>$long )
 		{
-			if( substr( (string)$uri, 0, strlen($long) ) == $long )
+			if( substr( Graphite::asString($uri), 0, strlen($long) ) == $long )
 			{
-				return $short.":".substr( (string)$uri, strlen($long ));
+				return $short.":".substr( Graphite::asString($uri), strlen($long ));
 			}
 		}
-		return (string)$uri;
+		return Graphite::asString($uri);
 	}
 
 	/**
@@ -524,15 +524,15 @@ rkJggg==
 	 */
 	public function expandURI( $uri )
 	{
-		if( preg_match( '/:/', (string)$uri ) )
+		if( preg_match( '/:/', Graphite::asString($uri) ) )
 		{
-			list( $ns, $tag ) = preg_split( "/:/", (string)$uri, 2 );
+			list( $ns, $tag ) = preg_split( "/:/", Graphite::asString($uri), 2 );
 			if( isset($this->ns[$ns]) )
 			{
 				return $this->ns[$ns].$tag;
 			}
 		}
-		return (string)$uri;
+		return Graphite::asString($uri);
 	}
 
 	/**
@@ -598,7 +598,14 @@ rkJggg==
     /** @deprecated All graphite objects should implement __toString() */
 	public function forceString( &$uri )
 	{
-		return (string)$uri;
+		$uri = asString( $uri );
+		return $uri;
+	}
+	
+	public function asString( $uri )
+	{
+		if( is_object( $uri ) ) { return $uri->toString(); }
+		return $uri;
 	}
 }
 
