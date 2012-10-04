@@ -386,13 +386,13 @@ class Graphite_Resource extends Graphite_Node
 				$pattern = "<span style='font-size:130%%'>&rarr;</span> <a title='%s' href='%s' style='text-decoration:none;color: green'>%s</a> <span style='font-size:130%%'>&rarr;</span> %s";
 			}
 			$prop = $prop->toString();
-			$plist []= sprintf( $pattern, $prop, $prop, $this->g->shrinkURI($prop), join( ", ",$olist ));
+			$plist []= sprintf( $pattern, htmlentities($prop), htmlentities($prop), htmlentities($this->g->shrinkURI($prop)), htmlentities(join( ", ",$olist )));
 		}
 		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='text-align:left;font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
 		if( isset($options["label"] ) )
 		{
 			$label = $this->label();
-			if( $label == "[NULL]" ) { $label = ""; } else { $label = "<strong>$label</strong>"; }
+			if( $label == "[NULL]" ) { $label = ""; } else { $label = "<strong>".htmlentities($label)."</strong>"; }
 			if( $this->has( "rdf:type" ) )
 			{
 				if( $this->get( "rdf:type" )->hasLabel() )
@@ -405,11 +405,11 @@ class Graphite_Resource extends Graphite_Node
 					$typename = array_pop( $bits );
 					$typename = preg_replace( "/([a-z])([A-Z])/","$1 $2",$typename );
 				}
-				$r .= preg_replace( "/>a ([AEIOU])/i", ">an $1", "<div style='float:right'>a $typename</div>" );
+				$r .= preg_replace( "/>a ([AEIOU])/i", ">an $1", "<div style='float:right'>a ".htmlentities($typename)."</div>" );
 			}
 			if( $label != "" ) { $r.="<div>$label</div>"; }
 		}
-		$r.= " <!-- DUMP:".$this->uri." -->\n <div><a title='".$this->uri."' href='".$this->uri."' style='text-decoration:none'>".$this->g->shrinkURI($this->uri)."</a></div>\n";
+		$r.= "<div><a title='".htmlentities($this->uri)."' href='".htmlentities($this->uri)."' style='text-decoration:none'>".htmlentities($this->g->shrinkURI($this->uri))."</a></div>\n";
 		$r.="  <div style='padding-left: 3em'>\n  <div>".join( "</div>\n  <div>", $plist )."</div></div><div style='clear:both;height:1px; overflow:hidden'>&nbsp;</div></div>";
 		return $r;
 	}
