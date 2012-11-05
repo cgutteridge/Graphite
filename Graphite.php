@@ -401,6 +401,21 @@ rkJggg==
 		if( isset( $o_datatype ) && $o_datatype )
 		{
 			if( $o_datatype == 'literal' ) { $o_datatype = null; }
+			# check for duplicates
+
+			# if there's existing triples with this subject & predicate,
+			# check for duplicates before adding this triple.
+			if( array_key_exists( $s, $this->t["sp"] ) 
+			 && array_key_exists( $p, $this->t["sp"][$s] ) )
+			{
+				foreach( $this->t["sp"][$s][$p] as $item )
+				{
+					# no need to add triple if we've already got it.
+					if( $item["v"] === $o 
+				 	&& $item["d"] === $o_datatype 
+				 	&& $item["l"] === $o_lang ) { return; }
+				}
+			}
 			$this->t["sp"][$s][$p][] = array(
 				"v"=>$o,
 				"d"=>$o_datatype,
@@ -408,9 +423,20 @@ rkJggg==
 		}
 		else
 		{
+			# if there's existing triples with this subject & predicate,
+			# check for duplicates before adding this triple.
+			if( array_key_exists( $s, $this->t["sp"] ) 
+			 && array_key_exists( $p, $this->t["sp"][$s] ) )
+			{
+				foreach( $this->t["sp"][$s][$p] as $item )
+				{
+					# no need to add triple if we've already got it.
+					if( $item === $o ) { return; } 
+				}
+			}
 			$this->t["sp"][$s][$p][] = $o;
+			$this->t["op"][$o][$p][] = $s;
 		}
-		$this->t["op"][$o][$p][] = $s;
 	}
 
 	/**
