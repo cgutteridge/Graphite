@@ -1,5 +1,5 @@
 <?php
-# (c)2010,2011 Christopher Gutteridge / University of Southampton
+# (c)2010,2011,2012 Christopher Gutteridge / University of Southampton
 # some extra features and bugfixes by Bart Nagel
 # License: LGPL
 # Version 1.5
@@ -65,6 +65,7 @@ class Graphite
 
 		$this->loaded = array();
 		$this->debug = false;
+		$this->arc2config = null;
 
 		$this->labelRelations = array(
 			"skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" );
@@ -97,7 +98,7 @@ rkJggg==
 		$this->firstGraphURI = null;
 		if( $uri )
 		{
-			$this->load( (string)$uri );
+			$this->load( Graphite::asString($uri) );
 		}
 
 		$this->bnodeprefix = 0;
@@ -159,6 +160,7 @@ rkJggg==
 		}
 	}
 
+	public function setARC2Config( $config ) { $this->arc2config = $config; }
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
 
 	/**
@@ -218,27 +220,29 @@ rkJggg==
 	 */
 	public function load( $uri, $aliases = array(), $map = array() )
 	{
-		$uri = $this->expandURI( (string)$uri );
+		$uri = $this->expandURI( Graphite::asString($uri) );
 
 		if( substr( $uri,0,5 ) == "data:" )
 		{
 			$data = urldecode( preg_replace( "/^data:[^,]*,/","", $uri ) );
-			$parser = ARC2::getTurtleParser();
+			$parser = ARC2::getTurtleParser( $this->arc2config );
 			$parser->parse( $uri, $data );
 		}
 		else
 		{
-            if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
+			if( $this->loaded( $uri ) !== false ) { return $this->loaded( $uri ); }
+
 			$data = $this->retriever->retrieve($uri);
 
 			if(!empty($data))
 			{
-				$parser = ARC2::getRDFXMLParser();
+				$parser = ARC2::getRDFXMLParser( $this->arc2config );
 				$parser->parse( $uri, $data );
 			}
 			else
 			{
 				$opts = array();
+ 				if( isset($this->arc2config) ) { $opts =  $this->arc2config; }
 				$opts['http_accept_header']= 'Accept: application/rdf+xml; q=0.9, text/turtle; q=0.8, */*; q=0.1';
 
 				$parser = ARC2::getRDFParser($opts);
@@ -280,7 +284,7 @@ rkJggg==
 	 */
 	function addTurtle( $base, $data )
 	{
-		$parser = ARC2::getTurtleParser();
+		$parser = ARC2::getTurtleParser( $this->arc2config );
 		$parser->parse( $base, $data );
 		$errors = $parser->getErrors();
 		$parser->resetErrors();
@@ -303,7 +307,7 @@ rkJggg==
 	 */
 	function addRDFXML( $base, $data )
 	{
-		$parser = ARC2::getRDFXMLParser();
+		$parser = ARC2::getRDFXMLParser( $this->arc2config );
 		$parser->parse( $base, $data );
 		$errors = $parser->getErrors();
 		$parser->resetErrors();
@@ -457,7 +461,11 @@ rkJggg==
 	 */
 	public function serialize( $type = "RDFXML" )
 	{
-		$serializer = ARC2::getSer( $type, array( "ns" => $this->ns ) );
+		$ns = $this->ns;
+		unset( $ns["dct"] ); 
+		// use dcterms for preference. duplicates seem to cause
+		// bugs in the serialiser
+		$serializer = ARC2::getSer( $type, array( "ns" => $ns ));
 		return $serializer->getSerializedTriples( $this->toArcTriples() );
 	}
 
@@ -475,7 +483,7 @@ rkJggg==
 		if( !$uri ) { $uri = $this->firstGraphURI; }
 		if( !$uri ) { return new Graphite_Null($this->g); }
 
-		return $this->resource( (string)$uri )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
+		return $this->resource( Graphite::asString($uri) )->get( "foaf:primaryTopic", "-foaf:isPrimaryTopicOf" );
 	}
 
 	/**
@@ -508,7 +516,7 @@ rkJggg==
 	 */
 	public function resource( $uri )
 	{
-		$uri = $this->expandURI( (string)$uri );
+		$uri = $this->expandURI( Graphite::asString($uri) );
 		return new Graphite_Resource( $this, $uri );
 	}
 
@@ -526,15 +534,15 @@ rkJggg==
 	 */
 	public function shrinkURI( $uri )
 	{
-		if( (string)$uri == "" ) { return "* This Document *"; }
+		if( Graphite::asString($uri) == "" ) { return "* This Document *"; }
 		foreach( $this->ns as $short=>$long )
 		{
-			if( substr( (string)$uri, 0, strlen($long) ) == $long )
+			if( substr( Graphite::asString($uri), 0, strlen($long) ) == $long )
 			{
-				return $short.":".substr( (string)$uri, strlen($long ));
+				return $short.":".substr( Graphite::asString($uri), strlen($long ));
 			}
 		}
-		return (string)$uri;
+		return Graphite::asString($uri);
 	}
 
 	/**
@@ -543,15 +551,15 @@ rkJggg==
 	 */
 	public function expandURI( $uri )
 	{
-		if( preg_match( '/:/', (string)$uri ) )
+		if( preg_match( '/:/', Graphite::asString($uri) ) )
 		{
-			list( $ns, $tag ) = preg_split( "/:/", (string)$uri, 2 );
+			list( $ns, $tag ) = preg_split( "/:/", Graphite::asString($uri), 2 );
 			if( isset($this->ns[$ns]) )
 			{
 				return $this->ns[$ns].$tag;
 			}
 		}
-		return (string)$uri;
+		return Graphite::asString($uri);
 	}
 
 	/**
@@ -617,7 +625,14 @@ rkJggg==
     /** @deprecated All graphite objects should implement __toString() */
 	public function forceString( &$uri )
 	{
-		return (string)$uri;
+		$uri = asString( $uri );
+		return $uri;
+	}
+	
+	public function asString( $uri )
+	{
+		if( is_object( $uri ) ) { return $uri->toString(); }
+		return $uri;
 	}
 }
 

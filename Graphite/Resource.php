@@ -4,7 +4,7 @@ class Graphite_Resource extends Graphite_Node
 	function __construct(Graphite $g, $uri )
 	{
 		$this->g = $g;
-		$this->uri = (string)$uri;
+		$this->uri = Graphite::asString($uri);
 	}
 
 	public function get( /* List */ )
@@ -26,7 +26,7 @@ class Graphite_Resource extends Graphite_Node
 
 		$l = $this->all( $args );
 		if( sizeof( $l ) == 0 ) { return; }
-		return (string)$l[0];
+		return Graphite::asString($l[0]);
 	}
 	# getString deprecated in favour of getLiteral
 	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
@@ -61,7 +61,7 @@ class Graphite_Resource extends Graphite_Node
 		$l = array();
 		foreach( $this->all( $args ) as $item )
 		{
-			$l []= (string)$item;
+			$l []= Graphite::asString($item);
 		}
 		return new Graphite_ResourceList($this->g,$l);
 	}
@@ -252,12 +252,11 @@ class Graphite_Resource extends Graphite_Node
 		$cnt = 0;
 		foreach( $this->all( "owl:sameAs" ) as $sameas )
 		{
-			if( $prefix && substr( (string)$sameas, 0, strlen($prefix )) != $prefix )
+			if( $prefix && substr( Graphite::asString($sameas), 0, strlen($prefix )) != $prefix )
 			{
 				continue;
 			}
-
-			$cnt += $this->g->load( (string)$sameas, array( (string)$sameas=>$this->uri ) );
+			$cnt += $this->g->load( Graphite::asString($sameas), array( Graphite::asString($sameas)=>$this->uri ) );
 		}
 		return $cnt;
 	}
@@ -386,14 +385,14 @@ class Graphite_Resource extends Graphite_Node
 			{
 				$pattern = "<span style='font-size:130%%'>&rarr;</span> <a title='%s' href='%s' style='text-decoration:none;color: green'>%s</a> <span style='font-size:130%%'>&rarr;</span> %s";
 			}
-			$prop = (string)$prop;
-			$plist []= sprintf( $pattern, $prop, $prop, $this->g->shrinkURI($prop), join( ", ",$olist ));
+			$prop = $prop->toString();
+			$plist []= sprintf( $pattern, htmlentities($prop), htmlentities($prop), htmlentities($this->g->shrinkURI($prop)), join( ", ",$olist ));
 		}
 		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='text-align:left;font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
 		if( isset($options["label"] ) )
 		{
 			$label = $this->label();
-			if( $label == "[NULL]" ) { $label = ""; } else { $label = "<strong>$label</strong>"; }
+			if( $label == "[NULL]" ) { $label = ""; } else { $label = "<strong>".htmlentities($label)."</strong>"; }
 			if( $this->has( "rdf:type" ) )
 			{
 				if( $this->get( "rdf:type" )->hasLabel() )
@@ -406,17 +405,17 @@ class Graphite_Resource extends Graphite_Node
 					$typename = array_pop( $bits );
 					$typename = preg_replace( "/([a-z])([A-Z])/","$1 $2",$typename );
 				}
-				$r .= preg_replace( "/>a ([AEIOU])/i", ">an $1", "<div style='float:right'>a $typename</div>" );
+				$r .= preg_replace( "/>a ([AEIOU])/i", ">an $1", "<div style='float:right'>a ".htmlentities($typename)."</div>" );
 			}
 			if( $label != "" ) { $r.="<div>$label</div>"; }
 		}
-		$r.= " <!-- DUMP:".$this->uri." -->\n <div><a title='".$this->uri."' href='".$this->uri."' style='text-decoration:none'>".$this->g->shrinkURI($this->uri)."</a></div>\n";
+		$r.= "<div><a title='".htmlentities($this->uri)."' href='".htmlentities($this->uri)."' style='text-decoration:none'>".htmlentities($this->g->shrinkURI($this->uri))."</a></div>\n";
 		$r.="  <div style='padding-left: 3em'>\n  <div>".join( "</div>\n  <div>", $plist )."</div></div><div style='clear:both;height:1px; overflow:hidden'>&nbsp;</div></div>";
 		return $r;
 	}
 
 	function __toString() {
-		return !empty($this->uri) ? (string)$this->uri : "";
+		return !empty($this->uri) ? Graphite::asString($this->uri) : "";
 	}
 
 	function dumpValue($options=array())
@@ -447,9 +446,9 @@ class Graphite_Resource extends Graphite_Node
 		{
 			if( is_a( $arg, "Graphite_InverseRelation" ) )
 			{
-				return array( "op", (string)$arg );
+				return array( "op", Graphite::asString($arg) );
 			}
-			return array( "sp", (string)$arg );
+			return array( "sp", Graphite::asString($arg) );
 		}
 
 		$set = "sp";
