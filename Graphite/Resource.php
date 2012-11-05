@@ -386,7 +386,7 @@ class Graphite_Resource extends Graphite_Node
 				$pattern = "<span style='font-size:130%%'>&rarr;</span> <a title='%s' href='%s' style='text-decoration:none;color: green'>%s</a> <span style='font-size:130%%'>&rarr;</span> %s";
 			}
 			$prop = $prop->toString();
-			$plist []= sprintf( $pattern, htmlentities($prop), htmlentities($prop), htmlentities($this->g->shrinkURI($prop)), htmlentities(join( ", ",$olist )));
+			$plist []= sprintf( $pattern, htmlentities($prop), htmlentities($prop), htmlentities($this->g->shrinkURI($prop)), join( ", ",$olist ));
 		}
 		$r.= "\n<a name='".htmlentities($this->uri)."'></a><div style='text-align:left;font-family: arial;padding:0.5em; background-color:lightgrey;border:dashed 1px grey;margin-bottom:2px;'>\n";
 		if( isset($options["label"] ) )
