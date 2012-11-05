@@ -629,7 +629,7 @@ rkJggg==
 		return $uri;
 	}
 	
-	public function asString( $uri )
+	static public function asString( $uri )
 	{
 		if( is_object( $uri ) ) { return $uri->toString(); }
 		return $uri;
