@@ -67,6 +67,8 @@ class Graphite
 		$this->debug = false;
 		$this->arc2config = null;
 
+		$this->lang = "en";
+
 		$this->labelRelations = array(
 			"skos:prefLabel", "rdfs:label", "foaf:name", "dct:title", "dc:title", "sioc:name" );
 		$this->mailtoIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAIAAAAvJUALAAAABGdBTUEAALGPC/xhBQAAAAlwSFlz
@@ -162,6 +164,7 @@ rkJggg==
 
 	public function setARC2Config( $config ) { $this->arc2config = $config; }
 	public function setDebug( $boolean ) { $this->debug = $boolean; }
+	public function setLang( $lang ) { $this->lang = $lang; }
 
 	/**
 	 * Return a list of the relations currently used for $resource->label(), if called with a parameter then this should be an array to <strong>replace</strong> the current list. To just add additonal relation types to use as labels, use addLabelRelation($relation).

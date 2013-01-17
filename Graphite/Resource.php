@@ -300,7 +300,22 @@ class Graphite_Resource extends Graphite_Node
 	}
 	public function label()
 	{
-		return $this->getLiteral( $this->g->labelRelations() );
+		$labels = $this->all( $this->g->labelRelations() );
+		# find the first label which is in the preferred language 
+		foreach( $labels as $label )
+		{
+			if( !is_a( $label, "Graphite_Literal" ) ) { continue; }
+			if( $label->language() == $this->g->lang ) { return $label; }
+		}
+		# ... or just return the first label if non match the prefered 
+		# language.
+		foreach( $labels as $label )
+		{
+			if( !is_a( $label, "Graphite_Literal" ) ) { continue; }
+			return $label;
+		}
+		# If no results were literals, return a NULL 
+		return new Graphite_Null($this->g); 
 	}
 
 	public function link()
@@ -409,6 +424,7 @@ class Graphite_Resource extends Graphite_Node
 			}
 			if( $label != "" ) { $r.="<div>$label</div>"; }
 		}
+		$r.= " <!-- DUMP:".$this->uri." -->\n ";
 		$r.= "<div><a title='".htmlentities($this->uri)."' href='".htmlentities($this->uri)."' style='text-decoration:none'>".htmlentities($this->g->shrinkURI($this->uri))."</a></div>\n";
 		$r.="  <div style='padding-left: 3em'>\n  <div>".join( "</div>\n  <div>", $plist )."</div></div><div style='clear:both;height:1px; overflow:hidden'>&nbsp;</div></div>";
 		return $r;
