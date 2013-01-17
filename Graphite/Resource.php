@@ -424,7 +424,6 @@ class Graphite_Resource extends Graphite_Node
 			}
 			if( $label != "" ) { $r.="<div>$label</div>"; }
 		}
-		$r.= " <!-- DUMP:".$this->uri." -->\n ";
 		$r.= "<div><a title='".htmlentities($this->uri)."' href='".htmlentities($this->uri)."' style='text-decoration:none'>".htmlentities($this->g->shrinkURI($this->uri))."</a></div>\n";
 		$r.="  <div style='padding-left: 3em'>\n  <div>".join( "</div>\n  <div>", $plist )."</div></div><div style='clear:both;height:1px; overflow:hidden'>&nbsp;</div></div>";
 		return $r;
