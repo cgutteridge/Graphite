@@ -453,8 +453,11 @@ rkJggg==
 	{
 		$arcTriples = array();
 		foreach( $this->allSubjects() as $s )
-		{
-			$arcTriples = array_merge( $arcTriples, $s->toArcTriples( false ) );
+		{	
+			foreach( $s->toArcTriples( false ) as $t )
+			{
+				$arcTriples []= $t;
+			}
 		}
 		return $arcTriples;
 	}
