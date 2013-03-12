@@ -20,7 +20,7 @@
 # todo:
 # hasRelationValue, hasRelation, filter
 
-# Load ARC2 assuming it's not already been loaded. Requires ARC2.php to be 
+# Load ARC2 assuming it's not already been loaded. Requires ARC2.php to be
 # in the path.
 if( !class_exists( "ARC2" ) )
 {
@@ -453,13 +453,205 @@ rkJggg==
 	{
 		$arcTriples = array();
 		foreach( $this->allSubjects() as $s )
-		{	
+		{
 			foreach( $s->toArcTriples( false ) as $t )
 			{
 				$arcTriples []= $t;
 			}
 		}
 		return $arcTriples;
+	}
+
+	/**
+	 * Returns a serialization of every geo-locatable entity as KML
+	 */
+	public function toKml()
+	{
+		$uri = $this->firstGraphURI;
+		$doc = $this->resource( $uri );
+
+		$desc = "";
+
+		$title = "Converted from RDF Document";
+		if( $doc->hasLabel() )
+		{
+			$title = $doc->label()." ($title)";
+		}
+
+		if( $doc->has("dc:description") )
+		{
+			$desc.= $doc->get( "dc:description" )->toString()."\n\n";
+		}
+		if(strlen($uri) > 0)
+		{
+			$desc .= 'Converted from '.$uri.' using Graphite (http://graphite.ecs.soton.ac.uk/)';
+		}
+		else
+		{
+			$desc .= 'Converted to KML using Graphite (http://graphite.ecs.soton.ac.uk/)';
+		}
+
+		$kml = "";
+		$kml .= '<?xml version="1.0" encoding="UTF-8"?>';
+		$kml .= '<kml xmlns="http://earth.google.com/kml/2.2">';
+		$kml .= '<Document>';
+		$kml .= '<name>'.htmlspecialchars($title).'</name>';
+		$kml .= '<description>'.htmlspecialchars($desc).'</description>';
+
+		$i=1;
+		$objects = $this->allSubjects();
+		$to_sort = array();
+		foreach( $objects as $thing )
+		{
+			$title = $thing->toString();
+			if( $thing->hasLabel() )
+			{
+				$title = $thing->label();
+			}
+			elseif( $thing->has( "-gr:hasPOS" ) && $thing->get( "-gr:hasPOS" )->hasLabel() )
+			{
+				$title = $thing->get( "-gr:hasPOS" )->label();
+			}
+
+			$desc='';
+			$done = array();
+			foreach( $thing->all("foaf:homepage") as $url )
+			{
+				if( @$done[$url->toString()] ) { continue; }
+				$desc.="<div><a href='".$url->toString()."'>Homepage</a></div>";
+				$done[$url->toString()] = true;
+			}
+			foreach( $thing->all("foaf:page") as $url )
+			{
+				if( @$done[$url->toString()] ) { continue; }
+				$desc.="<div><a href='".$url->toString()."'>More Information</a></div>";
+				$done[$url->toString()] = true;
+			}
+
+			if( $thing->has( "dc:description", "dcterms:description" ) )
+			{
+				$desc.= htmlspecialchars( $thing->getString( "dc:description" , "dcterms:description"));
+			}
+
+			$img = 'http://maps.gstatic.com/intl/en_ALL/mapfiles/ms/micons/blue-dot.png';
+			if ( $thing->has("http://data.totl.net/ns/icon") )
+			{
+				$img = $thing->getString("http://data.totl.net/ns/icon");
+			}
+			if ( $thing->has("http://purl.org/openorg/mapIcon") )
+			{
+				$img = $thing->getString("http://purl.org/openorg/mapIcon");
+			}
+			$img = htmlspecialchars($img);
+			$title = htmlspecialchars( $title );
+
+			$placemark = "";
+			if( $thing->has( "dct:spatial" ) )
+			{
+				$placemark = "<Placemark>";
+				$placemark .= "<name>" . $title . " (Polygon)</name>";
+				$placemark .= "<description>$desc</description>";
+				foreach( $thing->all( "dct:spatial" ) as $sp )
+				{
+					$v = $sp->toString();
+					if( preg_match( '/POLYGON\s*\(\((.*)\)\)/', $v, $bits ) )
+					{
+						$x = "";
+						if( @$_GET['height'] )
+						{
+							$x = "<extrude>1</extrude><altitudeMode>relativeToGround</altitudeMode>";
+
+						}
+						$placemark .= "<Polygon>" . $x;
+						$placemark .= "<outerBoundaryIs>";
+						$placemark .= "<LinearRing>";
+						$placemark .= "<tessellate>1</tessellate>";
+						$placemark .= "<coordinates>";
+						$coords = preg_split( '/\s*,\s*/', trim( $bits[1] ) );
+						foreach( $coords as $coord )
+						{
+							$point = preg_split( '/\s+/', $coord );
+							if(sizeof($point)==2) {
+								if( @$_GET['height'] )
+								{
+									$point []= $_GET['height'];
+								}
+								else
+								{
+									$point []= "0.000000";
+								}
+							}
+							$placemark.=join( ",",$point )."\n";
+						}
+						$placemark .= "</coordinates>";
+						$placemark .= "</LinearRing>";
+						$placemark .= "</outerBoundaryIs>";
+						$placemark .= "</Polygon>";
+					}
+				}
+				$placemark .= "<styleUrl>#stylep" . $i . "</styleUrl>";
+				$placemark .= "</Placemark>";
+				$placemark .= "<Style id='stylep" . $i . "'>";
+				$placemark .= "<LineStyle>";
+				$placemark .= "<color>ff000000</color>";
+				$placemark .= "</LineStyle>";
+				$placemark .= "<PolyStyle>";
+				$placemark .= "<color>66fc3135</color>";
+				$placemark .= "</PolyStyle>";
+				$placemark .= "</Style>";
+				$to_sort[$title." (Polygon)"][] = $placemark;
+				++$i;
+			}
+
+			$alt = "0.000000";
+			$lat = null;
+			$long = null;
+			if( $thing->has( "geo:lat" ) ) { $lat = $thing->getString( "geo:lat" ); }
+			if( $thing->has( "geo:long" ) ) { $long = $thing->getString( "geo:long" ); }
+			if( $thing->has( "geo:alt" ) ) { $alt = $thing->get( "geo:alt" ); }
+
+			if( $thing->has( "vcard:geo" ) )
+			{
+				$geo = $thing->get( "vcard:geo" );
+				if( $geo->has( "vcard:latitude" ) ) { $lat = $geo->getString( "vcard:latitude" ); }
+				if( $geo->has( "vcard:longitude" ) ) { $long = $geo->getString( "vcard:longitude" ); }
+			}
+			if( $thing->has( "georss:point" ) )
+			{
+				list($lat,$long) = preg_split( '/ /', trim( $thing->get("georss:point" )->toString() ) );
+			}
+
+			if( isset( $lat ) && isset( $long ) )
+			{
+				$placemark = "<Placemark>";
+				$placemark .= "<name>$title</name>";
+				$placemark .= "<description>$desc</description>";
+				$placemark .= "<styleUrl>#style" . $i . "</styleUrl>";
+				$placemark .= "<Point>";
+				$placemark .= "<coordinates>" . $long . "," . $lat . "," . $alt . "</coordinates>";
+				$placemark .= "</Point>";
+				$placemark .= "</Placemark>";
+				$placemark .= "<Style id='style" . $i . "'>";
+				$placemark .= "<IconStyle>";
+				$placemark .= "<Icon>";
+				$placemark .= "<href>$img</href>";
+				$placemark .= "</Icon>";
+				$placemark .= "</IconStyle>";
+				$placemark .= "</Style>";
+				++$i;
+				$to_sort[$title][] = $placemark;
+			}
+		}
+
+		ksort( $to_sort );
+		foreach( $to_sort as $k=>$v )
+		{
+			$kml .= join( "", $v );
+		}
+		$kml .= "</Document></kml>";
+
+		return($kml);
+
 	}
 
 	/**
