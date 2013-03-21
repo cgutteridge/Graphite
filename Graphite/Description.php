@@ -273,6 +273,7 @@ class Graphite_Description
 			"ttl"=>"RDF (Turtle)",
 			"rdf"=>"RDF (XML)",
 			"rdf.html" => "RDF (RDF HTML Debug)",
+			"kml" => "KML",
 		);
 	}
 
@@ -312,6 +313,13 @@ class Graphite_Description
 		{
 			header( "Content-type: application/rdf+xml" );
 			print $this->toGraph()->serialize( "RDFXML" );
+			return true;
+		}
+
+		if( $format == 'kml' )
+		{
+			header( "Content-type: application/vnd.google-earth.kml+xml" );
+			print $this->toGraph()->toKML();
 			return true;
 		}
 
