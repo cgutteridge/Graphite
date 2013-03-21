@@ -111,6 +111,19 @@ class Graphite_ResourceList extends ArrayIterator
 		return new Graphite_ResourceList($this->g,$l);
 	}
 
+	/**
+	 * Return a resource list with the same items but in a random order.
+	 * 
+	 * $resource_list = $resource->shuffle();
+	 */
+	function shuffle( $fn )
+	{
+		$l = array();
+		foreach( $this as $resource ) { $l []= $resource; }
+		shuffle( $l );
+		return new Graphite_ResourceList($this->g,$l);
+	}
+
 	public function uasort( $cmp )
 	{
 		usort($this->a, $cmp );
@@ -457,4 +470,7 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return $list;
 	}
+
+
+
 }
