@@ -422,4 +422,39 @@ class Graphite_ResourceList extends ArrayIterator
 		}
 		return $list;
 	}
+
+	/**
+	 * Map a list of resources to a function which must return a resource or null 
+	 * 
+	 * $resource_list = $resource->map( function( $r ) { return $new_r; } );
+	 */
+	function map( $fn )
+	{
+		$list = new Graphite_ResourceList( $this->g, array() );
+		foreach( $this as $item )
+		{
+			$new_item = $fn($item);
+			if( $new_item !== null ) { $list [] = $new_item; }
+		}
+		return $list;
+	}
+
+	/**
+	 * Filter a list of resources by calling a function on them and creating a new
+	 * list of rseources for which the function returned true.
+	 * 
+	 * $resource_list = $resource->map( function( $r ) { return $bool; } );
+	 */
+	function filter( $fn )
+	{
+		$list = new Graphite_ResourceList( $this->g, array() );
+		foreach( $this as $item )
+		{
+			if( $fn($item) )
+			{
+				$list [] = $new_item; 
+			}
+		}
+		return $list;
+	}
 }
