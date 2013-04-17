@@ -274,6 +274,7 @@ class Graphite_Description
 			"rdf"=>"RDF (XML)",
 			"rdf.html" => "RDF (RDF HTML Debug)",
 			"kml" => "KML",
+			"ics" => "iCalendar",
 		);
 	}
 
@@ -319,7 +320,14 @@ class Graphite_Description
 		if( $format == 'kml' )
 		{
 			header( "Content-type: application/vnd.google-earth.kml+xml" );
-			print $this->toGraph()->toKML();
+			print $this->toGraph()->toKml();
+			return true;
+		}
+
+		if( $format == 'ics' )
+		{
+			header( "Content-type: text/calendar" );
+			print $this->toGraph()->toIcs();
 			return true;
 		}
 

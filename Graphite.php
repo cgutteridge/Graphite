@@ -463,6 +463,59 @@ rkJggg==
 	}
 
 	/**
+	 * Returns a serialization of every temporal entity as an iCalendar file
+	 */
+	public function toIcs()
+	{
+		$r = "";
+
+		$r .= "BEGIN:VCALENDAR\r\n";
+		$r .= "PRODID:-//Graphite//EN\r\n";
+		$r .= "VERSION:2.0\r\n";
+		$r .= "CALSCALE:GREGORIAN\r\n";
+		$r .= "METHOD:PUBLISH\r\n";
+
+		foreach($this->allSubjects() as $res)
+		{
+			if(!($res->has("http://purl.org/NET/c4dm/event.owl#time")))
+			{
+				continue;
+			}
+			$time = $res->get("http://purl.org/NET/c4dm/event.owl#time");
+			if(!($time->has("http://purl.org/NET/c4dm/timeline.owl#start")))
+			{
+				continue;
+			}
+			if(!($time->has("http://purl.org/NET/c4dm/timeline.owl#end")))
+			{
+				continue;
+			}
+			$starttime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#start"));
+			$endtime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#end"));
+			$location = "";
+			if($res->has("http://purl.org/NET/c4dm/event.owl#place"))
+			{
+				$location = $res->all("http://purl.org/NET/c4dm/event.owl#place")->label()->join(", ");
+			}
+			$title = str_replace("\n", "\\n", $res->label());
+			$description = str_replace("\n", "\\n", $res->get("http://purl.org/dc/terms/description"));
+
+			$r .= "BEGIN:VEVENT\r\n";
+			$r .= "DTSTART:" . gmdate("Ymd", $starttime) . "T" . gmdate("His", $starttime) . "Z\r\n";
+			$r .= "DTEND:" . gmdate("Ymd", $endtime) . "T" . gmdate("His", $endtime) . "Z\r\n";
+			$r .= "UID:" . $res . "\r\n";
+			$r .= "SUMMARY:" . $title . "\r\n";
+			$r .= "DESCRIPTION:" . $description . "\r\n";
+			$r .= "LOCATION:" . $location . "\r\n";
+			$r .= "END:VEVENT\r\n";
+		}
+
+		$r .= "END:VCALENDAR\r\n";
+
+		return($r);
+	}
+
+	/**
 	 * Returns a serialization of every geo-locatable entity as KML
 	 */
 	public function toKml()
