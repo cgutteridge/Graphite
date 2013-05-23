@@ -30,7 +30,8 @@
 
 <dt>$graph-&gt;addTriple( $subject,$predicate,$object, [$datatype], [$language] );</dt>
 <dt>$graph-&gt;addCompressedTriple( $subject,$predicate,$object, [$datatype], [$language] );</dt>
-<dd>Add a single triple directly to the graph. Only addCompressedTriple accepts shortended URIs, eg foaf:name.</dd>
+<dt>$graph-&gt;t( $subject,$predicate,$object, [$datatype], [$language] );</dt>
+<dd>Add a single triple directly to the graph. Only addCompressedTriple accepts shortended URIs, eg foaf:name. t() is an alias for addCompressedTriple as we've found it more readable in big blocks of code.</dd>
 
 <dt>$count = $graph-&gt;loadSPARQL( $endpoint, $query );</dt>
 <dd>Calls the SPARQL query on the endpoint and loads the results into the graph. $query should be a SPARQL "CONSTRUCT" query which returns RDF, rather than a table of resutls. The return value is the number of triples added.</dd>
@@ -138,6 +139,20 @@
 
 <dt>$boolean = $resource-&gt;isNull();</dt>
 <dd>Return true if the resource is a null node, e.g. as the result of $resource-&gt;get("something:nonexistent").</dd>
+
+<dt>$resource = $resource-&gt;add( $relation,$object, [$datatype], [$language] );</dt>
+<dt>$resource = $resource-&gt;add( $inverse_relation, $subject );</dt>
+<dd>Creates a new triple linked to this resource, and returns a handle on the same resource to allow chaining. This allows for some elegant code to add several triples in very readable way:
+<pre>
+$graph-&gt;resource( "http://example.org/person/23" )
+	-&gt;add( "foaf:name", "Marvin Fenderson", "literal" )
+	-&gt;add( "foaf:phone", "tel:+44123456789" )
+	-&gt;add( "-foaf:member" "http://dbpedia.org/resource/University_of_Southampton" );
+</pre>
+This syntax aims to keep the cut-and-pasted code to a minimum.
+</dd>
+
+	
 
 <dt>$label = $resource-&gt;label()</dt>
 <dd>Get a valid label for this resource, tries all of skos:prefLabel, rdfs:label, foaf:name, dct:title, dc:title, sioc:name. Returns "[NULL]" if no label is available. To alter or add to the list of relationships considered to be labels, see $graph-&gt;labelRelations($list) and $graph-&gt;addLabelRelation($list)</dd>

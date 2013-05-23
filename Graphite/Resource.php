@@ -7,6 +7,21 @@ class Graphite_Resource extends Graphite_Node
 		$this->uri = Graphite::asString($uri);
 	}
 
+	public function add( $p,$o, $o_datatype=null,$o_lang=null )
+	{
+		$p = $this->g->expandURI( $p );
+		if( is_a( $p, "Graphite_InverseRelation" ) ) 
+		{
+			$this->g->t( $o,$p,$this );
+		}
+		else
+		{
+			$this->g->t( $this,$p,$o, $o_datatype,$o_lang );
+		}
+
+		return $this;			
+	}
+
 	public function get( /* List */ )
 	{
 		$args = func_get_args();

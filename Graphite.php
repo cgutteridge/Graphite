@@ -372,7 +372,17 @@ rkJggg==
 	 *
 	 * @see addTriple
 	 */
-	function addCompressedTriple( $s,$p,$o,$o_datatype=null,$o_lang=null,$aliases=array() )
+	function addCompressedTriple( $s,$p,$o, $o_datatype=null,$o_lang=null,$aliases=array() )
+	{
+		$this->t( $s,$p,$o, $o_datatype,$o_lang,$aliases );
+	}
+
+	/**
+	 * Alias for addCompressedTriple for more readable code.
+	 *
+	 * @see addTriple
+	 */
+	function t( $s,$p,$o, $o_datatype=null,$o_lang=null,$aliases=array() )
 	{
 		$s = $this->expandURI( $s );
 		$p = $this->expandURI( $p );
@@ -381,7 +391,7 @@ rkJggg==
 		{
 			$o_datatype = $this->expandURI( $o_datatype );
 		}
-		$this->addTriple( $s,$p,$o,$o_datatype,$o_lang,$aliases );
+		$this->addTriple( $s,$p,$o, $o_datatype,$o_lang,$aliases );
 	}
 
 	/**
