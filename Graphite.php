@@ -386,7 +386,11 @@ rkJggg==
 	{
 		$s = $this->expandURI( $s );
 		$p = $this->expandURI( $p );
-		$o = $this->expandURI( $o );
+		if( !isset( $o_datatype ) )
+		{
+			# only expand $o if it's a non literal triple
+			$o = $this->expandURI( $o );
+		}
 		if( isset( $o_datatype ) && $o_datatype != "literal" )
 		{
 			$o_datatype = $this->expandURI( $o_datatype );
