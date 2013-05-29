@@ -813,9 +813,16 @@ rkJggg==
 	/**
 	 * Translate a URI from the short form to any long version known.
 	 * IE:  foaf:knows => http://xmlns.com/foaf/0.1/knows
+	 * also expands "a" => http://www.w3.org/1999/02/22-rdf-syntax-ns#type
 	 */
 	public function expandURI( $uri )
 	{
+		# allow "a" as even shorter cut for rdf:type. This doesn't get applied
+		# in inverse if you use shrinkURI
+		if( $uri == "a" )
+		{
+			return "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+		}
 		if( preg_match( '/:/', Graphite::asString($uri) ) )
 		{
 			list( $ns, $tag ) = preg_split( "/:/", Graphite::asString($uri), 2 );
