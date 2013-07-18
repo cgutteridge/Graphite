@@ -72,9 +72,24 @@ class Graphite_ResourceList extends ArrayIterator
 	}
 
 	/**
-	 * Return a list with any duplicates removed, otherwise preserving current order.
+	 * As dump() but for preformatted plain text, rather than HTML output.
 	 *
-	 * $new_resourcelist = $resourcelist->distinct();
+	 * $dump = $resourcelist->dumpText( [$options] );
+	 */
+	function dumpText()
+	{
+		$l = array();
+		foreach( $this as $resource )
+		{
+			$l [] = $resource->dumpText();
+		}
+		return join( "", $l );
+	}
+
+	/**
+	 * Return a copy of this list.
+	 *
+	 * $new_resourcelist = $resourcelist->duplicate();
 	 */
 	public function duplicate()
 	{
