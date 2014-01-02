@@ -489,30 +489,55 @@ rkJggg==
 		$r .= "CALSCALE:GREGORIAN\r\n";
 		$r .= "METHOD:PUBLISH\r\n";
 
+		$done = array();
+
 		foreach($this->allSubjects() as $res)
 		{
-			if(!($res->has("http://purl.org/NET/c4dm/event.owl#time")))
+			if($res->has("http://purl.org/NET/c4dm/event.owl#time"))
+			{
+				$time = $res->get("http://purl.org/NET/c4dm/event.owl#time");
+			} else {
+				$time = $res;
+			}
+			$timeuri = "" . $time;
+			if(array_key_exists($timeuri, $done))
 			{
 				continue;
 			}
-			$time = $res->get("http://purl.org/NET/c4dm/event.owl#time");
-			if(!($time->has("http://purl.org/NET/c4dm/timeline.owl#start")))
+			$done[$timeuri] = $timeuri;
+			$starttime = 0;
+			$endtime = 0;
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#start"))
+			{
+				$starttime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#start"));
+			}
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime"))
+			{
+				$starttime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime"));
+			}
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#end"))
+			{
+				$endtime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#end"));
+			}
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#endsAtDateTime"))
+			{
+				$endtime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#endsAtDateTime"));
+			}
+			if(($starttime == 0) | ($endtime == 0))
 			{
 				continue;
 			}
-			if(!($time->has("http://purl.org/NET/c4dm/timeline.owl#end")))
-			{
-				continue;
-			}
-			$starttime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#start"));
-			$endtime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#end"));
 			$location = "";
 			if($res->has("http://purl.org/NET/c4dm/event.owl#place"))
 			{
 				$location = $res->all("http://purl.org/NET/c4dm/event.owl#place")->label()->join(", ");
 			}
 			$title = str_replace("\n", "\\n", $res->label());
-			$description = str_replace("\n", "\\n", $res->get("http://purl.org/dc/terms/description"));
+			$description = "";
+			if($res->has("http://purl.org/dc/terms/description"))
+			{
+				$description = str_replace("\n", "\\n", $res->get("http://purl.org/dc/terms/description"));
+			}
 
 			$r .= "BEGIN:VEVENT\r\n";
 			$r .= "DTSTART:" . gmdate("Ymd", $starttime) . "T" . gmdate("His", $starttime) . "Z\r\n";
@@ -529,6 +554,76 @@ rkJggg==
 		return($r);
 	}
 
+	/**
+	 * Functions to create an OpenStreetMap HTML page
+	 */
+
+	private function generatePointsMap($points)
+	{
+		$html = "";
+		$maxlat = -999.0;
+		$minlat = 999.0;
+		$maxlon = -999.0;
+		$minlon = 999.0;
+
+		foreach($points as $point)
+		{
+			$lat = $point['lat'];
+			$lon = $point['lon'];
+			$html .= "lonLat.push(new OpenLayers.LonLat(" . $lon . "," . $lat . ").transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject()));\n";
+			if($lat < $minlat) { $minlat = $lat; }
+			if($lat > $maxlat) { $maxlat = $lat; }
+			if($lon < $minlon) { $minlon = $lon; }
+			if($lon > $maxlon) { $maxlon = $lon; }
+		}
+
+		$avelat = (($maxlat - $minlat) / 2) + $minlat;
+		$avelon = (($maxlon - $minlon) / 2) + $minlon;
+
+		$html = "<html><head><script src=\"http://www.openlayers.org/api/OpenLayers.js\"></script>\n<script>\nfunction drawMap() { map = new OpenLayers.Map(\"mapdiv\");\nmap.addLayer(new OpenLayers.Layer.OSM());\nvar lonLat = Array();\n" . $html;
+
+		$html .= "var markers = new OpenLayers.Layer.Markers( \"Markers\" );\n";
+		$html .= "var length = lonLat.length;\n";
+		$html .= "map.addLayer(markers);\n";
+		$html .= "for(var i=0; i < length; i++) { markers.addMarker(new OpenLayers.Marker(lonLat[i]));}\n";
+		$html .= "var ctr = new OpenLayers.LonLat(" . $avelon . "," . $avelat . ").transform(new OpenLayers.Projection(\"EPSG:4326\"),map.getProjectionObject());\n";
+
+		$html .= "var bounds = new OpenLayers.Bounds(" . $minlon . "," . $minlat . "," . $maxlon . "," . $maxlat . ").transform(new OpenLayers.Projection(\"EPSG:4326\"),new OpenLayers.Projection(\"EPSG:900913\"));\n";
+
+		$html .= "var zoom = map.getZoomForExtent(bounds.transform(new OpenLayers.Projection(\"EPSG:4326\")), true);\n";
+		$html .= "map.setCenter(ctr,zoom);\n";
+
+		$html .= "}</script></head><body onLoad=\"drawMap();\"><div id=\"mapdiv\"></div></body></html>";
+
+		return($html);
+
+	}
+	
+	public function toOpenStreetMap()
+	{
+		$uri = $this->firstGraphURI;
+		$doc = $this->resource( $uri );
+		$objects = $this->allSubjects();
+		$points = array();
+		foreach( $objects as $thing )
+		{
+			if(!(($thing->has("http://www.w3.org/2003/01/geo/wgs84_pos#lat")) & ($thing->has("http://www.w3.org/2003/01/geo/wgs84_pos#long"))))
+			{
+				continue;
+			}
+			$point = array();
+			$point['lat'] = $thing->getString("http://www.w3.org/2003/01/geo/wgs84_pos#lat");
+			$point['lon'] = $thing->getString("http://www.w3.org/2003/01/geo/wgs84_pos#long");
+			$point['title'] = $thing->label();
+			$points[] = $point;
+		}
+		if(count($points) == 0)
+		{
+			return "";
+		}
+		return $this->generatePointsMap($points);
+	}
+	 
 	/**
 	 * Returns a serialization of every geo-locatable entity as KML
 	 */
