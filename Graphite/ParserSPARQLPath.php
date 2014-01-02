@@ -12,18 +12,29 @@ $ns = array(
 "foaf"=> 	"http://xmlns.com/foaf/0.1/",
 "tl"=> 		"http://purl.org/NET/c4dm/timeline.owl#",
 "event"=> 	"http://purl.org/NET/c4dm/event.owl#",
-"spacerel"=>	"http://data.ordnancesurvey.co.uk/ontology/spatialrelations/",
+"sr"=>	"http://data.ordnancesurvey.co.uk/ontology/spatialrelations/",
 );
 
+$endpoint = "http://edward.ecs.soton.ac.uk:8002/sparql/";
+$root = "<http://id.southampton.ac.uk/building/32>";
 $path = "(./(a|rdfs:label))|(^(!event:place)/(a|rdfs:label))";
-$path = "^spacerel:within*/rdfs:label";
-$path = "^spacerel:within{2}/rdfs:label";
+$path = "^sr:within*/rdfs:label";
+$path = "^sr:within{2}/rdfs:label";
 $path = "!(foaf:name|foaf:mbox|^foaf:member)/(rdfs:label|a)";
 $path = "!rdfs:label";
+$path = ".|(./(rdfs:label|a))|(^sr:within){1,3}/(rdfs:label|a)?";
+
+
+
+$endpoint = "http://dbpedia.org/sparql";
+$root = "<http://dbpedia.org/resource/University_of_Southampton>";
+$path = ".|(.|^!<http://dbpedia.org/ontology/almaMater>)/a";
+
+
 
 print "\n";
 print "PATH: $path\n\n";
-$p = new sparqlPathParser( 
+$p = new ParserSPARQLPath( 
 	array( "hyphen-inverse"=>true, "wildcards"=>true )
 );
 $p->setString( $path );
@@ -42,13 +53,11 @@ print $munger->render( $match )."\n";
 
 
 
-$root = "<http://id.southampton.ac.uk/building/85>";
 list( $cons, $where ) = $munger->sparql( $match, $root );
 $query = "CONSTRUCT { $cons }\nWHERE { $where }\n";
 print "$query\n";
 $graph = new Graphite();
-$endpoint = "http://edward.ecs.soton.ac.uk:8002/sparql/";
-$url = $endpoint."?query=".urlencode($query)."&soft-limit=-1";
+$url = $endpoint."?query=".urlencode($query)."&soft-limit=-1&format=application%2Frdf%2Bxml";
 $n = $graph->load( $url );
 print "$url\n";
 print "$n matches\n";
@@ -453,7 +462,7 @@ function denullseq( $seq_v, $n )
 		
 }
 
-class sparqlPathParser {
+class ParserSPARQLPath {
 
 # defaults
 var $options = array( 
@@ -461,7 +470,7 @@ var $options = array(
 	"wildcards" => false,
 );
 
-function sparqlPathParser( $options = array() )
+function ParserSPARQLPath( $options = array() )
 {
 	foreach( $this->options as $k=>$v )
 	{
@@ -471,7 +480,7 @@ function sparqlPathParser( $options = array() )
 		}
 		else
 		{
-			print "[[Unknown sparqlPathParser option: $k]]\n";
+			print "[[Unknown ParserSPARQLPath option: $k]]\n";
 		}
 	}
 }
