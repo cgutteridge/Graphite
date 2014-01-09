@@ -277,9 +277,11 @@ rkJggg==
 	/**
 	 * This uses one or more SPARQL queries to the given endpoint to get all the triples required for the description. The return value is the total number of triples added to the graph.
 	 */
-	function loadSPARQL( $endpoint, $query )
+	function loadSPARQL( $endpoint, $query, $opts=array() )
 	{
-		return $this->load( $endpoint."?query=".urlencode($query) );
+		$url = $endpoint."?query=".urlencode($query);
+		foreach( $opts as $k=>$v ) { $url .= "&$k=".urlencode($v); }
+		return $this->load( $url );
 	}
 
 	/**
@@ -1011,6 +1013,7 @@ require_once 'Graphite/Relation.php';
 require_once 'Graphite/InverseRelation.php';
 require_once 'Graphite/ResourceList.php';
 require_once 'Graphite/Description.php';
+require_once 'Graphite/ParserSPARQLPath.php';
 
 function graphite_sort_list_cmp( $a, $b )
 {
