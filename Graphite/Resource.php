@@ -388,7 +388,7 @@ class Graphite_Resource extends Graphite_Node
 			# icon adapted from cc-by icon at http://pc.de/icons/
 		}
 
-		if( substr( $this->uri, 0, 7 ) == "mailto:" )
+		if( strcasecmp( substr( $this->uri, 0, 7 ), "mailto:" ) == 0 )
 		{
 			$label = substr( $this->uri, 7 );
 			if( $this->hasLabel() ) { $label = $this->label(); }
