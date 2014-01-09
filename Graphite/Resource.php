@@ -276,6 +276,38 @@ class Graphite_Resource extends Graphite_Node
 		return $cnt;
 	}
 
+	public function loadSPARQLPath( $endpoint, $path, $options = array() )
+	{
+		if( !isset( $options["wildcards"] ) ) { $options["wildcards"] = true; }
+
+		$sparql_params = array();
+		if( isset( $options["sparql_params"] ) ) 
+		{ 
+			$sparql_params = $options["sparql_params"];
+			unset( $options["sparql_params"] ); # don't pass them to the parser
+		}
+
+		$p = new GraphiteParserSPARQLPath( $options );
+
+		$p->setString( $path );
+		list( $match, $offset ) = $p->xPath( 0 );
+		if( !$match || $offset != sizeof( $p->chars ) ) 
+		{ 
+			# need better error handling!
+			print "failed to parse path (sorry, I don't know how to put error messages into a parser, I think I may have skipped that class)\n"; 
+			exit;
+		}
+		$refactor = new GraphiteSPARQLPathRefactor( $this->g->ns,8 );
+
+		$match = $refactor->refactor( $match );
+
+		list( $cons, $where ) = $refactor->sparql( $match, "<".$this->uri.">" );
+
+		$query = "CONSTRUCT { $cons }\nWHERE { $where }\n";
+
+		return $this->g->loadSPARQL( $endpoint, $query, $sparql_params );
+	}
+
 	public function type()
 	{
 		return $this->get( "rdf:type" );
