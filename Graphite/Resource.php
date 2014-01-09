@@ -294,8 +294,7 @@ class Graphite_Resource extends Graphite_Node
 		if( !$match || $offset != sizeof( $p->chars ) ) 
 		{ 
 			# need better error handling!
-			print "failed to parse path (sorry, I don't know how to put error messages into a parser, I think I may have skipped that class)\n"; 
-			exit;
+			throw new GraphitePathException( "Failed to parse path at offset 0: $path");
 		}
 		$refactor = new GraphiteSPARQLPathRefactor( $this->g->ns,8 );
 
