@@ -44,7 +44,9 @@ class Graphite_Literal extends Graphite_Node
 		$v = preg_replace( "/\t/", "<span class='special_char' style='font-size:70%'>[tab]</span>", $v );
 		$v = preg_replace( "/\n/", "<span class='special_char' style='font-size:70%'>[nl]</span><br />", $v );
 		$v = preg_replace( "/\r/", "<span class='special_char' style='font-size:70%'>[cr]</span>", $v );
-		$v = preg_replace( "/  +/e", "\"<span class='special_char' style='font-size:70%'>\".str_repeat(\"␣\",strlen(\"$0\")).\"</span>\"", $v );
+		$v = preg_replace_callback( "/  +/", function($matches) {
+			return "<span class='special_char' style='font-size:70%'>" . str_repeat("␣", strlen($matches[0])) . "</span>";
+		}, $v);
 		$r = '"'.$v.'"';
 
 		if( isset($this->triple["l"]) && $this->triple["l"])
