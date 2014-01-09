@@ -655,7 +655,7 @@ rkJggg==
 
 		$kml = "";
 		$kml .= '<?xml version="1.0" encoding="UTF-8"?>';
-		$kml .= '<kml xmlns="http://earth.google.com/kml/2.2">';
+		$kml .= '<kml xmlns="http://www.opengis.net/kml/2.2">';
 		$kml .= '<Document>';
 		$kml .= '<name>'.htmlspecialchars($title).'</name>';
 		$kml .= '<description>'.htmlspecialchars($desc).'</description>';
