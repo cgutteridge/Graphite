@@ -196,6 +196,72 @@ function multi( $tree, $min, $max )
 	return $this->refactor( $alt );
 }
 
+function unionThenSequence($tree)
+{
+	if( $tree["type"] != "alt" && $tree["type"] != "seq" ) { return $tree; }
+
+	$v=array();
+	foreach( $tree["v"] as $child )
+	{
+		$v []= $this->unionThenSequence( $child );
+	}
+	$tree["v"] = $v;
+
+	# remove any doubled up seq->seq or alt->alt pairs
+	$tree = $this->refactor( $tree );
+
+	if( $tree["type"] == "alt" ) { return $tree; }
+
+	# start with an alt containing only one seq (the current tree)
+	$alt_seqs = array( $tree ); 
+
+	while(true)
+	{
+		# first test if any of the seqs in alt_seqs contain an alt
+		# if none do then we're done.
+		$seq_with_alt = false;
+		$alt_pos = false;
+		for( $i=0;$i<sizeof($alt_seqs);++$i)  
+		{
+			$alt_seq = $alt_seqs[$i];
+			# we know this is of type seq so can loop over [v]
+			for( $j=0;$j<sizeof( $alt_seq["v"] );++$j )
+			{
+				if( $alt_seq["v"][$j]["type"] == "alt" )
+				{
+					$seq_with_alt = $i;
+					$alt_pos = $j;
+					break( 2 );
+				}
+			}
+		}
+		if( $seq_with_alt === false ) { break; }
+
+		# ok a sequence has an alt in!
+
+		$seq_with_alt_in = array_pop(array_splice( $alt_seqs, $seq_with_alt, 1 ));		
+
+		foreach( $seq_with_alt_in["v"][$alt_pos]["v"] as $alt_option )
+		{
+			$new_seq = array( "type"=>"seq", "v"=>array());
+			for( $i=0; $i<sizeof($seq_with_alt_in["v"]); $i++ )
+			{
+				if( $i == $alt_pos )
+				{
+					$new_seq["v"][] = $alt_option;
+				}
+				else
+				{
+					$new_seq["v"][] = $seq_with_alt_in["v"][$i];
+				}
+			}
+			$alt_seqs []= $new_seq;
+		}
+	}
+
+	return array( "type"=>"alt", "v"=>$alt_seqs );
+}
+
 function refactor($tree)
 {
 	if( $tree["type"] == "ZeroOrMorePath" ) { return $this->multi( $tree, 0, $this->max_depth ); }
