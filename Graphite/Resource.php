@@ -294,27 +294,27 @@ class Graphite_Resource extends Graphite_Node
 			unset( $options["union-then-sequence"] ); # don't pass them to the parser
 		}
 
-		$p = new GraphiteParserSPARQLPath( $options );
+		$p = new Graphite_ParserSPARQLPath( $options );
 
 		$p->setString( $path );
 		list( $match, $offset ) = $p->xPath( 0 );
 		if( !$match || $offset != sizeof( $p->chars ) ) 
 		{ 
 			# need better error handling!
-			throw new GraphitePathException( "Failed to parse path at offset 0: $path");
+			throw new Graphite_PathException( "Failed to parse path at offset 0: $path");
 		}
 
-		$refactor = new GraphiteSPARQLPathRefactor( $this->g->ns,8 );
+		$refactor = new Graphite_SPARQLPathRefactor( $this->g->ns,8 );
 
 		# simplify terms and get them in an order ready for processing
-		$match = $refactor->refactor( $match );
+		$match = $refactor->simplify( $match );
 
 		# Refactor the alt & seq ordering if needed
 		if( $union_then_sequence )
 		{
 			$match = $refactor->unionThenSequence( $match );
 			# Remove a last nested alt, if any
-			$match = $refactor->refactor( $match );
+			$match = $refactor->simplify( $match );
 		}	
 
 		list( $cons, $where ) = $refactor->sparql( $match, "<".$this->uri.">" );

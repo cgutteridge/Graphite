@@ -3,7 +3,7 @@
 # These classes are only for internal use and their API may change
 # without notice between versions. Use via $resouce->loadSPARQLPath(..)
 
-class GraphiteSPARQLPathRefactor
+class Graphite_SPARQLPathRefactor
 {
 
 var $ns;
@@ -170,13 +170,13 @@ function render( $tree, $indent="" )
 #A/NULL/B => A/B
 #A|NULL|B (top level) A|B
 #A/(B|NULL|C)/D = (A|D)|A/(B|C)/D
-#refactor(A/(B|C|NULL)/(D|NULL)/E) => refactor(A/(B|C)/(D|NULL)/E)|refactor(A/(D|NULL)/E)
+#simplify(A/(B|C|NULL)/(D|NULL)/E) => simplify(A/(B|C)/(D|NULL)/E)|simplify(A/(D|NULL)/E)
 
 
 function multi( $tree, $min, $max )
 {
-	if( $min>$max ) { throw new GraphitePathException( "min $min can't be greater than max $max" ); }
-	$inner = $this->refactor( $tree["v"] );
+	if( $min>$max ) { throw new Graphite_PathException( "min $min can't be greater than max $max" ); }
+	$inner = $this->simplify( $tree["v"] );
 
 	$v = array();
 	for( $i=$min;$i<=$max;++$i )
@@ -193,7 +193,7 @@ function multi( $tree, $min, $max )
 		$v []= array( "type"=>"seq", "v"=>$v2 );
 	}
 	$alt = array( "type"=>"alt", "v"=>$v );
-	return $this->refactor( $alt );
+	return $this->simplify( $alt );
 }
 
 function unionThenSequence($tree)
@@ -208,7 +208,7 @@ function unionThenSequence($tree)
 	$tree["v"] = $v;
 
 	# remove any doubled up seq->seq or alt->alt pairs
-	$tree = $this->refactor( $tree );
+	$tree = $this->simplify( $tree );
 
 	if( $tree["type"] == "alt" ) { return $tree; }
 
@@ -262,7 +262,7 @@ function unionThenSequence($tree)
 	return array( "type"=>"alt", "v"=>$alt_seqs );
 }
 
-function refactor($tree)
+function simplify($tree)
 {
 	if( $tree["type"] == "ZeroOrMorePath" ) { return $this->multi( $tree, 0, $this->max_depth ); }
 	if( $tree["type"] == "OneOrMorePath" ) { return $this->multi( $tree, 1, $this->max_depth ); }
@@ -288,7 +288,7 @@ function refactor($tree)
 		# look up ns later!! TODO
 		if( !array_key_exists( $tree["ns"], $this->ns ) )
 		{
-			throw new GraphitePathException( "namespace '".$tree["ns"]."' not defined" );
+			throw new Graphite_PathException( "namespace '".$tree["ns"]."' not defined" );
 		}
 		$uri = $this->ns[$tree["ns"]].$tree["local"];
 		return array( "type"=>"IRIREF", "v"=>$uri );
@@ -297,12 +297,12 @@ function refactor($tree)
 	# remove doubled up ^^
 	if( $tree["type"] == "inv" && $tree["v"]["type"] == "inv" )
 	{
-		return $this->refactor( $tree["v"]["v"] ); 
+		return $this->simplify( $tree["v"]["v"] ); 
 	}
 
 	if( $tree["type"] == "inv" )
 	{
-		$inv_v = $this->refactor( $tree["v"] );
+		$inv_v = $this->simplify( $tree["v"] );
 
 		if( $inv_v["type"] == "NULL" )
 		{
@@ -317,7 +317,7 @@ function refactor($tree)
 			{
 				$v []= array( "type"=>"inv", "v"=>$p );
 			}
-			return $this->refactor( array( "type"=>"NPS", "v"=>$v ) );
+			return $this->simplify( array( "type"=>"NPS", "v"=>$v ) );
 		}
 	
 		# inv(alt(x,y)) becomes alt(inv(x),inv(y))
@@ -328,7 +328,7 @@ function refactor($tree)
 			{
 				$v []= array( "type"=>"inv", "v"=>$p );
 			}
-			return $this->refactor( array( "type"=>"alt", "v"=>$v ) );
+			return $this->simplify( array( "type"=>"alt", "v"=>$v ) );
 		}
 	
 		# inv(seq(x,y)) becomes seq(inv(y),inv(x))
@@ -339,7 +339,7 @@ function refactor($tree)
 			{
 				$v []= array( "type"=>"inv", "v"=>$p );
 			}
-			return $this->refactor( array( "type"=>"seq", "v"=>array_reverse($v ) ) );
+			return $this->simplify( array( "type"=>"seq", "v"=>array_reverse($v ) ) );
 		}
 
 		return array( "type"=>"inv", "v"=>$inv_v );
@@ -351,7 +351,7 @@ function refactor($tree)
 		$v=array();
 		foreach( $tree["v"] as $p )
 		{
-			$v []= $this->refactor( $p );
+			$v []= $this->simplify( $p );
 		}
 		return array( "type"=>"NPS", "v"=>$v );
 	}
@@ -361,8 +361,8 @@ function refactor($tree)
 		$v = array();
 		foreach( $tree["v"] as $p )
 		{
-			$new_p = $this->refactor( $p );
-			# if the refactord version of this property is now the same type as the
+			$new_p = $this->simplify( $p );
+			# if the simplified version of this property is now the same type as the
 			# node we are processing, add it's children directly to this nodes children
 			if( $new_p["type"] == $tree["type"] )
 			{
@@ -404,7 +404,7 @@ function refactor($tree)
 		}
 
 		# in a seq() look for any alt() which contain a NULL so
-		# refactor( seq( A, alt( NULL,B ), C ) ) becomes refactor( alt( refactor( seq( A,C)), refactor( seq( A,B,C))))
+		# simplify( seq( A, alt( NULL,B ), C ) ) becomes simplify( alt( simplify( seq( A,C)), simplify( seq( A,B,C))))
 
 		# if it's a seq,which contains an alt, which contains a NULL
 		# split it in two on that alt
@@ -430,7 +430,7 @@ function refactor($tree)
 		return array( "type"=>$tree["type"], "v"=>$v );
 	}
 
-	throw new GraphitePathException( "unhandled structure: ".print_r( $tree, true) );
+	throw new Graphite_PathException( "unhandled structure: ".print_r( $tree, true) );
 }
 
 # turn a seq into two one with and one without a NULL
@@ -458,14 +458,14 @@ function denullseq( $seq_v, $n )
 		}
 		$alt_off++;
 	}	
-	$v1_seq = $this->refactor( array( "type"=>"seq", "v"=>$v1 ) );
-	$v2_seq = $this->refactor( array( "type"=>"seq", "v"=>$v2 ) );
-	return $this->refactor( array( "type"=>"alt", "v"=>array( $v1_seq, $v2_seq ) ) );
+	$v1_seq = $this->simplify( array( "type"=>"seq", "v"=>$v1 ) );
+	$v2_seq = $this->simplify( array( "type"=>"seq", "v"=>$v2 ) );
+	return $this->simplify( array( "type"=>"alt", "v"=>array( $v1_seq, $v2_seq ) ) );
 }
 		
 }
 
-class GraphiteParserSPARQLPath {
+class Graphite_ParserSPARQLPath {
 
 # defaults
 var $options = array( 
@@ -483,7 +483,7 @@ function __construct( $options = array() )
 		}
 		else
 		{
-			print "[[Unknown GraphiteParserSPARQLPath option: $k]]\n";
+			print "[[Unknown Graphite_ParserSPARQLPath option: $k]]\n";
 		}
 	}
 }
@@ -503,7 +503,7 @@ function parseException( $expected, $offset )
 		if( $i==$offset ) { $msg .= "<*>"; }
 		$msg .= $this->chars[$i];
 	}
-	return new GraphitePathException( $msg );
+	return new Graphite_PathException( $msg );
 }
 
 function xChar($re, $offset, $options = 's') 
@@ -1154,5 +1154,6 @@ function debug( $offset )
 
 }
 
-class GraphitePathException extends Exception {
+class Graphite_PathException extends Exception {
 }
+
