@@ -357,6 +357,10 @@ rkJggg==
 			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
 			$t["p"] = $this->cleanURI($t["p"]);
+
+			# work around for bug in ARC2 turtle parser. 
+			if( $t["o_type"] == "bnode" ) { $t["o_datatype"] = ""; } 
+
 			if( $t["p"] != "http://www.w3.org/2002/07/owl#sameAs" ) { continue; }
 			$aliases[$this->addBnodePrefix( $t["o"] )] = $t["s"];
 		}
