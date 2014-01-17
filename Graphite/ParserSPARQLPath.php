@@ -1,5 +1,8 @@
 <?php
 
+# These classes are only for internal use and their API may change
+# without notice between versions. Use via $resouce->loadSPARQLPath(..)
+
 class GraphiteSPARQLPathRefactor
 {
 
@@ -337,7 +340,7 @@ function refactor($tree)
 		# in a seq() look for any alt() which contain a NULL so
 		# refactor( seq( A, alt( NULL,B ), C ) ) becomes refactor( alt( refactor( seq( A,C)), refactor( seq( A,B,C))))
 
-		# if it's a seq,which contains and alt, which contains a NULL
+		# if it's a seq,which contains an alt, which contains a NULL
 		# split it in two on that alt
 		if( $tree["type"]=="seq" )
 		{
