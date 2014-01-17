@@ -1,0 +1,21 @@
+{
+    "name": "cgutteridge/graphite",
+    "type": "library",
+    "description": "Friendly API to work with RDF data using ARC2",
+    "keywords": ["rdf","sparql"],
+    "homepage": "http://graphite.ecs.soton.ac.uk/",
+    "license": "LGPL",
+    "authors": [
+        {
+            "name": "Christopher Gutteridge",
+            "email": "cjg@ecs.soton.ac.uk",
+            "homepage": "http://users.ecs.soton.ac.uk/cjg/"
+        }
+    ],
+    "require": {
+        "semsol/arc2": "dev-master"
+    },
+    "autoload": {
+        "files": ["Graphite.php"]
+    }
+}

@@ -1,69 +1,12 @@
 <?php
 
-require_once( "../../arc/ARC2.php");
-require_once( "../Graphite.php" );
-
-$ns = array(
-"rdfs"=> 	"http://www.w3.org/2000/01/rdf-schema#",
-"xsd"=> 	"http://www.w3.org/2001/XMLSchema#",
-"sioc"=> 	"http://rdfs.org/sioc/ns#",
-"dcterms"=> 	"http://purl.org/dc/terms/",
-"prog"=> 	"http://purl.org/prog/",
-"foaf"=> 	"http://xmlns.com/foaf/0.1/",
-"tl"=> 		"http://purl.org/NET/c4dm/timeline.owl#",
-"event"=> 	"http://purl.org/NET/c4dm/event.owl#",
-"spacerel"=>	"http://data.ordnancesurvey.co.uk/ontology/spatialrelations/",
-);
-
-$path = "(./(a|rdfs:label))|(^(!event:place)/(a|rdfs:label))";
-$path = "^spacerel:within*/rdfs:label";
-$path = "^spacerel:within{2}/rdfs:label";
-$path = "!(foaf:name|foaf:mbox|^foaf:member)/(rdfs:label|a)";
-$path = "!rdfs:label";
-
-print "\n";
-print "PATH: $path\n\n";
-$p = new sparqlPathParser( 
-	array( "hyphen-inverse"=>true, "wildcards"=>true )
-);
-$p->setString( $path );
-list( $match, $offset ) = $p->xPath( 0 );
-if( !$match || $offset != sizeof( $p->chars ) ) { 
-	print "fail!\n"; 
-	exit;
-}
-$munger = new SPARQLPathMunger( $ns,7 );
-
-print $munger->render( $match )."\n";
-print "--\n";
-$match = $munger->munge( $match );
-print $munger->render( $match )."\n";
-
-
-
-
-$root = "<http://id.southampton.ac.uk/building/85>";
-list( $cons, $where ) = $munger->sparql( $match, $root );
-$query = "CONSTRUCT { $cons }\nWHERE { $where }\n";
-print "$query\n";
-$graph = new Graphite();
-$endpoint = "http://edward.ecs.soton.ac.uk:8002/sparql/";
-$url = $endpoint."?query=".urlencode($query)."&soft-limit=-1";
-$n = $graph->load( $url );
-print "$url\n";
-print "$n matches\n";
-print $graph->dumpText();
-exit;
-
-
-class SPARQLPathMunger
+class GraphiteSPARQLPathRefactor
 {
 
 var $ns;
 var $max_depth;
 
-#construct
-function sparqlPathMunger( $ns=array(), $max_depth=8)
+function __construct( $ns=array(), $max_depth=8)
 {
 	$this->ns = $ns;
 	$this->max_depth = $max_depth;
@@ -224,13 +167,13 @@ function render( $tree, $indent="" )
 #A/NULL/B => A/B
 #A|NULL|B (top level) A|B
 #A/(B|NULL|C)/D = (A|D)|A/(B|C)/D
-#munge(A/(B|C|NULL)/(D|NULL)/E) => munge(A/(B|C)/(D|NULL)/E)|munge(A/(D|NULL)/E)
+#refactor(A/(B|C|NULL)/(D|NULL)/E) => refactor(A/(B|C)/(D|NULL)/E)|refactor(A/(D|NULL)/E)
 
 
 function multi( $tree, $min, $max )
 {
-	if( $min>$max ) { throw new PathException( "min $min can't be greater than max $max" ); }
-	$inner = $this->munge( $tree["v"] );
+	if( $min>$max ) { throw new GraphitePathException( "min $min can't be greater than max $max" ); }
+	$inner = $this->refactor( $tree["v"] );
 
 	$v = array();
 	for( $i=$min;$i<=$max;++$i )
@@ -247,10 +190,10 @@ function multi( $tree, $min, $max )
 		$v []= array( "type"=>"seq", "v"=>$v2 );
 	}
 	$alt = array( "type"=>"alt", "v"=>$v );
-	return $this->munge( $alt );
+	return $this->refactor( $alt );
 }
 
-function munge($tree)
+function refactor($tree)
 {
 	if( $tree["type"] == "ZeroOrMorePath" ) { return $this->multi( $tree, 0, $this->max_depth ); }
 	if( $tree["type"] == "OneOrMorePath" ) { return $this->multi( $tree, 1, $this->max_depth ); }
@@ -276,7 +219,7 @@ function munge($tree)
 		# look up ns later!! TODO
 		if( !array_key_exists( $tree["ns"], $this->ns ) )
 		{
-			throw new PathException( "namespace '".$tree["ns"]."' not defined" );
+			throw new GraphitePathException( "namespace '".$tree["ns"]."' not defined" );
 		}
 		$uri = $this->ns[$tree["ns"]].$tree["local"];
 		return array( "type"=>"IRIREF", "v"=>$uri );
@@ -285,12 +228,12 @@ function munge($tree)
 	# remove doubled up ^^
 	if( $tree["type"] == "inv" && $tree["v"]["type"] == "inv" )
 	{
-		return $this->munge( $tree["v"]["v"] ); 
+		return $this->refactor( $tree["v"]["v"] ); 
 	}
 
 	if( $tree["type"] == "inv" )
 	{
-		$inv_v = $this->munge( $tree["v"] );
+		$inv_v = $this->refactor( $tree["v"] );
 
 		if( $inv_v["type"] == "NULL" )
 		{
@@ -305,7 +248,7 @@ function munge($tree)
 			{
 				$v []= array( "type"=>"inv", "v"=>$p );
 			}
-			return $this->munge( array( "type"=>"NPS", "v"=>$v ) );
+			return $this->refactor( array( "type"=>"NPS", "v"=>$v ) );
 		}
 	
 		# inv(alt(x,y)) becomes alt(inv(x),inv(y))
@@ -316,7 +259,7 @@ function munge($tree)
 			{
 				$v []= array( "type"=>"inv", "v"=>$p );
 			}
-			return $this->munge( array( "type"=>"alt", "v"=>$v ) );
+			return $this->refactor( array( "type"=>"alt", "v"=>$v ) );
 		}
 	
 		# inv(seq(x,y)) becomes seq(inv(y),inv(x))
@@ -327,7 +270,7 @@ function munge($tree)
 			{
 				$v []= array( "type"=>"inv", "v"=>$p );
 			}
-			return $this->munge( array( "type"=>"seq", "v"=>array_reverse($v ) ) );
+			return $this->refactor( array( "type"=>"seq", "v"=>array_reverse($v ) ) );
 		}
 
 		return array( "type"=>"inv", "v"=>$inv_v );
@@ -339,7 +282,7 @@ function munge($tree)
 		$v=array();
 		foreach( $tree["v"] as $p )
 		{
-			$v []= $this->munge( $p );
+			$v []= $this->refactor( $p );
 		}
 		return array( "type"=>"NPS", "v"=>$v );
 	}
@@ -349,8 +292,8 @@ function munge($tree)
 		$v = array();
 		foreach( $tree["v"] as $p )
 		{
-			$new_p = $this->munge( $p );
-			# if the munged version of this property is now the same type as the
+			$new_p = $this->refactor( $p );
+			# if the refactord version of this property is now the same type as the
 			# node we are processing, add it's children directly to this nodes children
 			if( $new_p["type"] == $tree["type"] )
 			{
@@ -392,7 +335,7 @@ function munge($tree)
 		}
 
 		# in a seq() look for any alt() which contain a NULL so
-		# munge( seq( A, alt( NULL,B ), C ) ) becomes munge( alt( munge( seq( A,C)), munge( seq( A,B,C))))
+		# refactor( seq( A, alt( NULL,B ), C ) ) becomes refactor( alt( refactor( seq( A,C)), refactor( seq( A,B,C))))
 
 		# if it's a seq,which contains and alt, which contains a NULL
 		# split it in two on that alt
@@ -418,7 +361,7 @@ function munge($tree)
 		return array( "type"=>$tree["type"], "v"=>$v );
 	}
 
-	throw new PathException( "unhandled structure: ".print_r( $tree, true) );
+	throw new GraphitePathException( "unhandled structure: ".print_r( $tree, true) );
 }
 
 # turn a seq into two one with and one without a NULL
@@ -446,14 +389,14 @@ function denullseq( $seq_v, $n )
 		}
 		$alt_off++;
 	}	
-	$v1_seq = $this->munge( array( "type"=>"seq", "v"=>$v1 ) );
-	$v2_seq = $this->munge( array( "type"=>"seq", "v"=>$v2 ) );
-	return $this->munge( array( "type"=>"alt", "v"=>array( $v1_seq, $v2_seq ) ) );
+	$v1_seq = $this->refactor( array( "type"=>"seq", "v"=>$v1 ) );
+	$v2_seq = $this->refactor( array( "type"=>"seq", "v"=>$v2 ) );
+	return $this->refactor( array( "type"=>"alt", "v"=>array( $v1_seq, $v2_seq ) ) );
 }
 		
 }
 
-class sparqlPathParser {
+class GraphiteParserSPARQLPath {
 
 # defaults
 var $options = array( 
@@ -461,17 +404,17 @@ var $options = array(
 	"wildcards" => false,
 );
 
-function sparqlPathParser( $options = array() )
+function __construct( $options = array() )
 {
-	foreach( $this->options as $k=>$v )
+	foreach( $options as $k=>$v )
 	{
-		if( array_key_exists( $k, $options ) )
+		if( array_key_exists( $k, $this->options ) )
 		{
 			$this->options[ $k ] = $options[$k];
 		}
 		else
 		{
-			print "[[Unknown sparqlPathParser option: $k]]\n";
+			print "[[Unknown GraphiteParserSPARQLPath option: $k]]\n";
 		}
 	}
 }
@@ -481,6 +424,17 @@ function setString( $str )
 {
 	preg_match_all('/./u', $str, $results);
 	$this->chars = $results[0];
+}
+
+function parseException( $expected, $offset )
+{
+	$msg = "Expected $expected at offset $offset: ";
+	for( $i=0;$i<sizeof( $this->chars );++$i )
+	{
+		if( $i==$offset ) { $msg .= "<*>"; }
+		$msg .= $this->chars[$i];
+	}
+	return new GraphitePathException( $msg );
 }
 
 function xChar($re, $offset, $options = 's') 
@@ -514,7 +468,7 @@ function xPathAlternative( $offset )
 		$sub_offset++;
 
 		list( $sub_r, $sub_offset ) = $this->xPathSequence( $sub_offset );
-		if( !$sub_r ) { return array( false, $offset ); }
+		if( !$sub_r ) { throw $this->parseException( "PathSequence", $offset ); }
 		
 		$paths []= $sub_r;
 	}
@@ -540,7 +494,7 @@ function xPathSequence( $offset )
 		$sub_offset++;
 
 		list( $sub_r, $sub_offset ) = $this->xPathEltOrInverse( $sub_offset );
-		if( !$sub_r ) { return array( false, $offset ); }
+		if( !$sub_r ) { throw $this->parseException( "PathEltOrInverse", $offset ); }
 		
 		$paths []= $sub_r;
 	}
@@ -597,7 +551,7 @@ function xPathNM( $offset )
 		# then this did not match
 		if( $sub_offset >= sizeof( $this->chars ) ) { return array( false, $offset ); }
 
-		if( $char<"0" || $char>"9" ) { return array( false, $offset ); }
+		if( !$sub_r ) { throw $this->parseException( "0-9 in {}", $offset ); }
 
 		$num1 += $char;
 		$sub_offset++;
@@ -619,9 +573,9 @@ function xPathNM( $offset )
 	{
 		# if we run out of characters before we hit a "}"
 		# then this did not match
-		if( $sub_offset >= sizeof( $this->chars ) ) { return array( false, $offset ); }
+		if( $sub_offset >= sizeof( $this->chars ) ) { throw $this->parseException( "'}' after '{'", $offset ); }
 
-		if( $char<"0" || $char>"9" ) { return array( false, $offset ); }
+		if( $char<"0" || $char>"9" ) { throw $this->parseException( "0-9 in {}", $offset ); }
 
 		$num2 += $char;
 		$sub_offset++;
@@ -640,7 +594,7 @@ function xPathEltOrInverse( $offset )
 	{
 		$sub_offset = $offset+1;
 		list( $sub_r, $sub_offset ) = $this->xPathElt( $sub_offset );
-		if( !$sub_r ) { return array( false, $offset ); }
+		if( !$sub_r ) { throw $this->parseException( "PathElt after '^'", $offset ); }
 		
 		return array( array( "type"=>"inv", "v"=>$sub_r ) , $sub_offset );
 	}
@@ -691,7 +645,7 @@ function xPathPrimary( $offset )
 	if( $char == "!" )
 	{
 		list( $sub_r, $sub_offset ) = $this->xPathNegatedPropertySet( $offset+1 );
-		if( !$sub_r ) { return array( false, $offset ); } 
+		if( !$sub_r ) { throw $this->parseException( "PathNegatedPropertySet after '!'", $offset ); }
 
 		return array( $sub_r, $sub_offset );
 	}
@@ -700,10 +654,10 @@ function xPathPrimary( $offset )
 	if( $char == "(" )
 	{
 		list( $sub_r, $sub_offset ) = $this->xPath( $offset+1 );
-		if( !$sub_r ) { return array( false, $offset ); }
+		if( !$sub_r ) { throw $this->parseException( "Path after '('", $offset ); }
 
 		$char = $this->chars[$sub_offset];
-		if( $char != ")" ) { return array( false, $offset ); }
+		if( $char != ")" ) { throw $this->parseException( "')' after '('", $offset ); }
 		$sub_offset++;
 
 		return array( $sub_r, $sub_offset ); 
@@ -737,7 +691,7 @@ function xPathNegatedPropertySet( $offset )
 	$sub_offset = $offset+1; # consume "("
 
 	# out of stuff to parse?
-	if( $sub_offset >= sizeof( $this->chars ) ) { return array( false, $offset ); }
+	if( $sub_offset >= sizeof( $this->chars ) ) { throw $this->parseException( "')' after '('", $offset ); }
 
 	$paths = array();
 
@@ -745,10 +699,10 @@ function xPathNegatedPropertySet( $offset )
 	{
 		# Parse a pathone
 		list( $sub_r, $sub_offset ) = $this->xPathOneInPropertySet( $sub_offset );
-		if( !$sub_r ) { return array( false, $offset ); }
+		if( !$sub_r ) { throw $this->parseException( "PathOneInPropertySet", $sub_offset ); }
 		$paths []= $sub_r;	
 
-		if( $sub_offset >= sizeof( $this->chars ) ) { return array( false, $offset ); }
+		if( $sub_offset >= sizeof( $this->chars ) ) { throw $this->parseException( "')' after '('", $offset ); }
  		$char = $this->chars[$sub_offset];
 		if( $char == ")" )
 		{
@@ -761,7 +715,7 @@ function xPathNegatedPropertySet( $offset )
 			$sub_offset++; # consume it
 			continue;
 		}
-		return( array( false, $offset ) );
+		throw $this->parseException( "')' or '|' in PathNegatedPropertySet", $offset ); 
 	}
 }		
 
@@ -791,7 +745,7 @@ function xPathOneInPropertySet( $offset )
 		return array( array( "type"=>"inv", "v"=>array( "type"=>"A" )), $sub_offset+1 );
 	}
 
-	return array( false, $offset );	
+	throw $this->parseException( "'a' or iri after '^'", $offset ); 
 }
 
 ############################################################
@@ -823,15 +777,15 @@ function xIRIREF( $offset )
 	{
 		# if we run out of characters before we hit a ">"
 		# then this did not match
-		if( $sub_offset >= sizeof( $this->chars ) ) { return array( false, $offset ); }
+		if( $sub_offset >= sizeof( $this->chars ) ) { throw $this->parseException( "legal characters inside iri", $offset );  }
 
 	 	$char = $this->chars[$sub_offset];
 
 		# an IRI ref can't contiain these charaters
-		if( strpos( "<\"{}|^`\\", $char ) !== false ) { return array( false, $offset ); }
+		if( strpos( "<\"{}|^`\\", $char ) !== false ) { throw $this->parseException( "legal characters inside iri", $offset );  }
 
 		$u = $this->mb_ord( $char );
-		if( $u <= 0x20 ) { return array( false, $offset ); }
+		if( $u <= 0x20 ) { throw $this->parseException( "legal characters inside iri", $offset );  }
 
 		if( $char != ">" )
 		{
@@ -1077,10 +1031,10 @@ function xPERCENT( $offset )
 	$sub_offset = $offset+1;
 	
 	list( $c1, $sub_offset ) = $this->xHEX( $sub_offset );
-	if( !$c1 ) { return array( false, $offset ); }
+	if( !$c1 ) { throw $this->parseException( "expected 2 hex digits after '%'", $offset );  } 
 	
 	list( $c2, $sub_offset ) = $this->xHEX( $sub_offset );
-	if( !$c2 ) { return array( false, $offset ); }
+	if( !$c2 ) { throw $this->parseException( "expected 2 hex digits after '%'", $offset );  }
 
 	# we don't decode this
 	return array( "%".$c1.$c2, $sub_offset );
@@ -1105,7 +1059,10 @@ function xPN_LOCAL_ESC( $offset )
 	if( $this->chars[$offset] != "\\" ) { return array( false, $offset ); }
 
 	$char = $this->chars[$offset+1];
-	if( strpos( "_~.-!$&'()*+,;=/?#@%", $char ) === false ) { return array( false, $offset ); }
+	if( strpos( "_~.-!$&'()*+,;=/?#@%", $char ) === false ) 
+	{ 
+		throw $this->parseException( "expected one of _~.-!$&'()*+,;=/?#@% after '\\'", $offset );  
+	}
 
 	return array( $char, $offset+2 );
 }
@@ -1128,5 +1085,5 @@ function debug( $offset )
 
 }
 
-class PathException extends Exception {
+class GraphitePathException extends Exception {
 }
