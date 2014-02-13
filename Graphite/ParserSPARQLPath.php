@@ -239,7 +239,8 @@ function unionThenSequence($tree)
 
 		# ok a sequence has an alt in!
 
-		$seq_with_alt_in = array_pop(array_splice( $alt_seqs, $seq_with_alt, 1 ));		
+		$list = array_splice( $alt_seqs, $seq_with_alt, 1 );		
+		$seq_with_alt_in = array_pop($list);
 
 		foreach( $seq_with_alt_in["v"][$alt_pos]["v"] as $alt_option )
 		{
