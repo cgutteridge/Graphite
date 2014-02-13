@@ -551,7 +551,7 @@ function xPathNM( $offset )
 		# then this did not match
 		if( $sub_offset >= sizeof( $this->chars ) ) { return array( false, $offset ); }
 
-		if( !$sub_r ) { throw $this->parseException( "0-9 in {}", $offset ); }
+		if( $char<"0" || $char>"9" ) { throw $this->parseException( "0-9 in {}", $offset ); }
 
 		$num1 += $char;
 		$sub_offset++;
