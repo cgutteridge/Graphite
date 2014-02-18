@@ -8,21 +8,40 @@ class Graphite_SPARQLPathRefactor
 
 var $ns;
 var $max_depth;
+var $include_prov;
 
-function __construct( $ns=array(), $max_depth=8)
+function __construct( $ns=array(), $max_depth=8, $include_prov=false)
 {
 	$this->ns = $ns;
 	$this->max_depth = $max_depth;
+	$this->include_prov = $include_prov;
 }
 
-# TODO: NPS
-# seq,alt -> IRIREF,ANY,NPS,inv(IRIREF),inv(ANY)
 
-# * in a to variable indicates a floating value, to 
+
+# * in a $to variable indicates a floating value, to 
 # be assigned a new ?foo parameter any time it's used 
-# ie. it's leaf end of the path
-function sparql( $tree, $from, $to="*", &$nextid=0 )
+# ie. it's leaf end of the path, and not going to be 
+# constrained by or linked to another triple.
+function sparql( $tree, $from, $to="*", &$nextid=0, $top=true )
 {
+	# if the include_prov option is set, then we do a bit of
+	# a shufty to add in some additional triples, but only in
+	# the top level call to this function.
+	if( $top && $this->include_prov )
+	{
+		list( $cons, $where ) = $this->sparql( $tree, $from, $to, $nextid,false );
+
+		$time = date("c");
+		$cons = "
+<#provenanceEvent> a <http://www.w3.org/ns/prov#Activity> .
+<#provenanceEvent> <http://www.w3.org/ns/prov#endedAtTime> \"$time\"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<#provenanceEvent> <http://www.w3.org/ns/prov#generated> <> .
+<> <http://xmlns.com/foaf/0.1/primaryTopic> $from .
+$cons
+";
+		return array( $cons, $where );
+	}
 	if( $tree["type"] == "seq" )
 	{
 		$ids = array();
@@ -37,7 +56,7 @@ function sparql( $tree, $from, $to="*", &$nextid=0 )
 		$where []= "{";
 		for($i=0;$i<sizeof($tree["v"]);++$i )
 		{
-			list( $cons2, $where2 ) = $this->sparql( $tree["v"][$i], $ids[$i], $ids[$i+1], $nextid );
+			list( $cons2, $where2 ) = $this->sparql( $tree["v"][$i], $ids[$i], $ids[$i+1], $nextid,false );
 			$cons[]=$cons2;
 			$where[]=$where2;
 		}
@@ -51,7 +70,7 @@ function sparql( $tree, $from, $to="*", &$nextid=0 )
 		$where = array();
 		foreach( $tree["v"] as $p )
 		{
-			list( $cons2, $where2 ) = $this->sparql( $p, $from, $to, $nextid );
+			list( $cons2, $where2 ) = $this->sparql( $p, $from, $to, $nextid,false );
 			$cons[]=$cons2;
 			$where[]=$where2;
 		}
@@ -62,28 +81,28 @@ function sparql( $tree, $from, $to="*", &$nextid=0 )
 	{
 		$pred = "<".$tree["v"].">";
 		if( $to == "*" ) { $to = "?x".++$nextid; }
-		return array( "$from $pred $to . ", "$from $pred $to . " );
+		return $this->addGraphIfNeeded( array( "$from $pred $to . ", "$from $pred $to . " ), $nextid );
 	}
 
 	if( $tree["type"] == "inv" && $tree["v"]["type"] == "IRIREF" )
 	{
 		$pred = "<".$tree["v"]["v"].">";
 		if( $to == "*" ) { $to = "?x".++$nextid; }
-		return array( "$to $pred $from . ", "$to $pred $from . " );
+		return $this->addGraphIfNeeded( array( "$to $pred $from . ", "$to $pred $from . " ), $nextid );
 	}
 			
 	if( $tree["type"] == "ANY" )
 	{
 		$pred = "?p".++$nextid;
 		if( $to == "*" ) { $to = "?x".++$nextid; }
-		return array( "$from $pred $to . ", "$from $pred $to . " );
+		return $this->addGraphIfNeeded( array( "$from $pred $to . ", "$from $pred $to . " ), $nextid );
 	}
 
 	if( $tree["type"] == "inv" && $tree["v"]["type"] == "ANY" )
 	{
 		$pred = "?p".++$nextid;
 		if( $to == "*" ) { $to = "?x".++$nextid; }
-		return array( "$to $pred $from . ", "$to $pred $from . " );
+		return $this->addGraphIfNeeded( array( "$to $pred $from . ", "$to $pred $from . " ), $nextid );
 	}
 
 	if( $tree["type"] == "NPS" )
@@ -113,22 +132,48 @@ function sparql( $tree, $from, $to="*", &$nextid=0 )
 		{
 			$pred = "?p".++$nextid;
 			if( $to == "*" ) { $to = "?x".++$nextid; }
-			$cons []= "$from $pred $to . ";
-			$where []= "$from $pred $to . FILTER ( $pred != ".join( " && $pred != ", $fwd_paths )." )";
+			$pair = array( 
+				"$from $pred $to . ",
+				"$from $pred $to . FILTER ( $pred != ".join( " && $pred != ", $fwd_paths )." )" 
+			);
+			$this->addGraphIfNeeded( $pair, $nextid );
+			$cons []= $pair[0];
+			$where []= $pair[1];
 		}
-
+		
 		if( sizeof( $inv_paths ) )
 		{
 			$pred = "?p".++$nextid;
 			if( $to == "*" ) { $to = "?x".++$nextid; }
-			$cons []= "$to $pred $from . ";
-			$where []= "$to $pred $from . FILTER ( $pred != ".join( "&& $pred != ", $inv_paths )." )";
+			$pair = array( 
+				"$to $pred $from . ",
+				"$to $pred $from . FILTER ( $pred != ".join( "&& $pred != ", $inv_paths )." )"
+			);
+			$this->addGraphIfNeeded( $pair, $nextid );
+			$cons []= $pair[0];
+			$where []= $pair[1];
 		}
 
 		return array( join( "", $cons ), "{ ".join( " } UNION { ", $where )." }" );
 	}
 
 	return array( "# error","# error, this line should not have been reached" );
+}
+
+function addGraphIfNeeded( $cons_where_pair, &$nextid )
+{
+	if( $this->include_prov )
+	{
+		list( $cons, $where ) = $cons_where_pair;
+		$gr = "?g".++$nextid;
+		$p = "?p".++$nextid;
+		$o = "?o".++$nextid;
+		$cons = "<#provenanceEvent> <http://www.w3.org/ns/prov#used> $gr . $gr $p $o .  $cons ";
+		$where = "GRAPH $gr { $where } OPTIONAL { $gr $p $o } ";
+		return array( $cons, $where );
+	}
+
+	return $cons_where_pair;
 }
 
 function render( $tree, $indent="" )

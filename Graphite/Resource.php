@@ -294,6 +294,20 @@ class Graphite_Resource extends Graphite_Node
 			unset( $options["union-then-sequence"] ); # don't pass them to the parser
 		}
 
+		$include_prov = false;
+		if( isset( $options["include-prov"] ) ) 
+		{ 
+			$union_then_sequence = $options["include-prov"];
+			unset( $options["include-prov"] ); # don't pass them to the parser
+		}
+
+		$wildcard_depth = 8;
+		if( isset( $options["wildcard-depth"] ) ) 
+		{ 
+			$union_then_sequence = $options["wildcard-depth"];
+			unset( $options["wildcard-depth"] ); # don't pass them to the parser
+		}
+
 		$p = new Graphite_ParserSPARQLPath( $options );
 
 		$p->setString( $path );
@@ -304,7 +318,7 @@ class Graphite_Resource extends Graphite_Node
 			throw new Graphite_PathException( "Failed to parse path at offset 0: $path");
 		}
 
-		$refactor = new Graphite_SPARQLPathRefactor( $this->g->ns,8 );
+		$refactor = new Graphite_SPARQLPathRefactor( $this->g->ns,$wildcard_depth,$include_prov );
 
 		# simplify terms and get them in an order ready for processing
 		$match = $refactor->simplify( $match );

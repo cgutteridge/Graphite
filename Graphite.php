@@ -62,6 +62,7 @@ class Graphite
 		$this->ns( "geo",  "http://www.w3.org/2003/01/geo/wgs84_pos#" );
 		$this->ns( "sioc", "http://rdfs.org/sioc/ns#" );
 		$this->ns( "oo",   "http://purl.org/openorg/" );
+		$this->ns( "prov", "http://www.w3.org/ns/prov#" );
 
 		$this->loaded = array();
 		$this->debug = false;
