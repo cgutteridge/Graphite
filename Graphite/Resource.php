@@ -46,6 +46,30 @@ class Graphite_Resource extends Graphite_Node
 	# getString deprecated in favour of getLiteral
 	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
 
+	public function getLanguageLiteral( /* List */ )
+	{
+		$args = func_get_args();
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+
+		$literals = $this->all( $args );
+		# find the first literal which is in the preferred language 
+		foreach( $literals as $literal )
+		{
+			if( !is_a( $literal, "Graphite_Literal" ) ) { continue; }
+			if( $literal->language() == $this->g->lang ) { return $literal; }
+		}
+		# ... or just return the first literal if non match the prefered 
+		# language.
+		foreach( $literals as $literal )
+		{
+			if( !is_a( $literal, "Graphite_Literal" ) ) { continue; }
+			return $literal;
+		}
+		# If no results were literals, return a NULL 
+		return new Graphite_Null($this->g); 
+	}
+
 	public function getDatatype( /* List */ )
 	{
 		$args = func_get_args();
@@ -334,7 +358,6 @@ class Graphite_Resource extends Graphite_Node
 		list( $cons, $where ) = $refactor->sparql( $match, "<".$this->uri.">" );
 
 		$query = "CONSTRUCT { $cons }\nWHERE { $where }\n";
-
 		return $this->g->loadSPARQL( $endpoint, $query, $sparql_params );
 	}
 
