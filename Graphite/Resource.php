@@ -311,7 +311,8 @@ class Graphite_Resource extends Graphite_Node
 			unset( $options["sparql-params"] ); # don't pass them to the parser
 		}
 
-		$union_then_sequence = false;
+		# default to on as there's some bugs if this is not set
+		$union_then_sequence = true;
 		if( isset( $options["union-then-sequence"] ) ) 
 		{ 
 			$union_then_sequence = $options["union-then-sequence"];
@@ -358,6 +359,7 @@ class Graphite_Resource extends Graphite_Node
 		list( $cons, $where ) = $refactor->sparql( $match, "<".$this->uri.">" );
 
 		$query = "CONSTRUCT { $cons }\nWHERE { $where }\n";
+
 		return $this->g->loadSPARQL( $endpoint, $query, $sparql_params );
 	}
 
