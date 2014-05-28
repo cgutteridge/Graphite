@@ -439,9 +439,11 @@ rkJggg==
 				foreach( $this->t["sp"][$s][$p] as $item )
 				{
 					# no need to add triple if we've already got it.
-					if( $item["v"] === $o 
-				 	&& $item["d"] === $o_datatype 
-				 	&& $item["l"] === $o_lang ) { return; }
+					if( 
+					 is_array( $item )
+					 && $item["v"] === $o 
+				 	 && $item["d"] === $o_datatype 
+				 	 && $item["l"] === $o_lang ) { return; }
 				}
 			}
 			$this->t["sp"][$s][$p][] = array(
