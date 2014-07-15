@@ -899,7 +899,11 @@ rkJggg==
 		{
 			if( substr( Graphite::asString($uri), 0, strlen($long) ) == $long )
 			{
-				return $short.":".substr( Graphite::asString($uri), strlen($long ));
+				$term = substr( Graphite::asString($uri), strlen($long ) );
+				if( ! preg_match( "/[#\/]/", $term ) )
+				{
+					return $short.":".$term;
+				}
 			}
 		}
 		return Graphite::asString($uri);
