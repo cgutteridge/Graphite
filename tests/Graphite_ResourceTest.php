@@ -85,7 +85,7 @@ class Graphite_ResourceTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testLabel() {
-        $this->assertSame(null, $this->resource->label());
+        $this->assertInstanceOf('Graphite_Null', $this->resource->label());
 
         $this->markTestIncomplete("Needs further coverage");
     }

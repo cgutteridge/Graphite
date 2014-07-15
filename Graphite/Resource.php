@@ -46,6 +46,30 @@ class Graphite_Resource extends Graphite_Node
 	# getString deprecated in favour of getLiteral
 	public function getString( /* List */ ) { return $this->getLiteral( func_get_args() ); }
 
+	public function getLanguageLiteral( /* List */ )
+	{
+		$args = func_get_args();
+		if( isset($args[0]) && $args[0] instanceof Graphite_ResourceList ) { $args = $args[0]; }
+		if( isset($args[0]) && is_array( $args[0] ) ) { $args = func_get_arg( 0 ); }
+
+		$literals = $this->all( $args );
+		# find the first literal which is in the preferred language 
+		foreach( $literals as $literal )
+		{
+			if( !is_a( $literal, "Graphite_Literal" ) ) { continue; }
+			if( $literal->language() == $this->g->lang ) { return $literal; }
+		}
+		# ... or just return the first literal if non match the prefered 
+		# language.
+		foreach( $literals as $literal )
+		{
+			if( !is_a( $literal, "Graphite_Literal" ) ) { continue; }
+			return $literal;
+		}
+		# If no results were literals, return a NULL 
+		return new Graphite_Null($this->g); 
+	}
+
 	public function getDatatype( /* List */ )
 	{
 		$args = func_get_args();
@@ -276,6 +300,69 @@ class Graphite_Resource extends Graphite_Node
 		return $cnt;
 	}
 
+	public function loadSPARQLPath( $endpoint, $path, $options = array() )
+	{
+		if( !isset( $options["wildcards"] ) ) { $options["wildcards"] = true; }
+
+		$sparql_params = array();
+		if( isset( $options["sparql-params"] ) ) 
+		{ 
+			$sparql_params = $options["sparql-params"];
+			unset( $options["sparql-params"] ); # don't pass them to the parser
+		}
+
+		# default to on as there's some bugs if this is not set
+		$union_then_sequence = true;
+		if( isset( $options["union-then-sequence"] ) ) 
+		{ 
+			$union_then_sequence = $options["union-then-sequence"];
+			unset( $options["union-then-sequence"] ); # don't pass them to the parser
+		}
+
+		$include_prov = false;
+		if( isset( $options["include-prov"] ) ) 
+		{ 
+			$union_then_sequence = $options["include-prov"];
+			unset( $options["include-prov"] ); # don't pass them to the parser
+		}
+
+		$wildcard_depth = 8;
+		if( isset( $options["wildcard-depth"] ) ) 
+		{ 
+			$union_then_sequence = $options["wildcard-depth"];
+			unset( $options["wildcard-depth"] ); # don't pass them to the parser
+		}
+
+		$p = new Graphite_ParserSPARQLPath( $options );
+
+		$p->setString( $path );
+		list( $match, $offset ) = $p->xPath( 0 );
+		if( !$match || $offset != sizeof( $p->chars ) ) 
+		{ 
+			# need better error handling!
+			throw new Graphite_PathException( "Failed to parse path at offset 0: $path");
+		}
+
+		$refactor = new Graphite_SPARQLPathRefactor( $this->g->ns,$wildcard_depth,$include_prov );
+
+		# simplify terms and get them in an order ready for processing
+		$match = $refactor->simplify( $match );
+
+		# Refactor the alt & seq ordering if needed
+		if( $union_then_sequence )
+		{
+			$match = $refactor->unionThenSequence( $match );
+			# Remove a last nested alt, if any
+			$match = $refactor->simplify( $match );
+		}	
+
+		list( $cons, $where ) = $refactor->sparql( $match, "<".$this->uri.">" );
+
+		$query = "CONSTRUCT { $cons }\nWHERE { $where }\n";
+
+		return $this->g->loadSPARQL( $endpoint, $query, $sparql_params );
+	}
+
 	public function type()
 	{
 		return $this->get( "rdf:type" );
@@ -356,7 +443,7 @@ class Graphite_Resource extends Graphite_Node
 			# icon adapted from cc-by icon at http://pc.de/icons/
 		}
 
-		if( substr( $this->uri, 0, 7 ) == "mailto:" )
+		if( strcasecmp( substr( $this->uri, 0, 7 ), "mailto:" ) == 0 )
 		{
 			$label = substr( $this->uri, 7 );
 			if( $this->hasLabel() ) { $label = $this->label(); }

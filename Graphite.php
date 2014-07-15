@@ -62,6 +62,7 @@ class Graphite
 		$this->ns( "geo",  "http://www.w3.org/2003/01/geo/wgs84_pos#" );
 		$this->ns( "sioc", "http://rdfs.org/sioc/ns#" );
 		$this->ns( "oo",   "http://purl.org/openorg/" );
+		$this->ns( "prov", "http://www.w3.org/ns/prov#" );
 
 		$this->loaded = array();
 		$this->debug = false;
@@ -277,9 +278,11 @@ rkJggg==
 	/**
 	 * This uses one or more SPARQL queries to the given endpoint to get all the triples required for the description. The return value is the total number of triples added to the graph.
 	 */
-	function loadSPARQL( $endpoint, $query )
+	function loadSPARQL( $endpoint, $query, $opts=array() )
 	{
-		return $this->load( $endpoint."?query=".urlencode($query) );
+		$url = $endpoint."?query=".urlencode($query);
+		foreach( $opts as $k=>$v ) { $url .= "&$k=".urlencode($v); }
+		return $this->load( $url );
 	}
 
 	/**
@@ -355,6 +358,10 @@ rkJggg==
 			$t["s"] = $this->addBnodePrefix( $this->cleanURI($t["s"]) );
 			if( !isset($map[$t["s"]]) ) { continue; }
 			$t["p"] = $this->cleanURI($t["p"]);
+
+			# work around for bug in ARC2 turtle parser. 
+			if( $t["o_type"] == "bnode" ) { $t["o_datatype"] = ""; } 
+
 			if( $t["p"] != "http://www.w3.org/2002/07/owl#sameAs" ) { continue; }
 			$aliases[$this->addBnodePrefix( $t["o"] )] = $t["s"];
 		}
@@ -432,9 +439,11 @@ rkJggg==
 				foreach( $this->t["sp"][$s][$p] as $item )
 				{
 					# no need to add triple if we've already got it.
-					if( $item["v"] === $o 
-				 	&& $item["d"] === $o_datatype 
-				 	&& $item["l"] === $o_lang ) { return; }
+					if( 
+					 is_array( $item )
+					 && $item["v"] === $o 
+				 	 && $item["d"] === $o_datatype 
+				 	 && $item["l"] === $o_lang ) { return; }
 				}
 			}
 			$this->t["sp"][$s][$p][] = array(
@@ -655,7 +664,7 @@ rkJggg==
 
 		$kml = "";
 		$kml .= '<?xml version="1.0" encoding="UTF-8"?>';
-		$kml .= '<kml xmlns="http://earth.google.com/kml/2.2">';
+		$kml .= '<kml xmlns="http://www.opengis.net/kml/2.2">';
 		$kml .= '<Document>';
 		$kml .= '<name>'.htmlspecialchars($title).'</name>';
 		$kml .= '<description>'.htmlspecialchars($desc).'</description>';
@@ -1015,6 +1024,7 @@ require_once 'Graphite/Relation.php';
 require_once 'Graphite/InverseRelation.php';
 require_once 'Graphite/ResourceList.php';
 require_once 'Graphite/Description.php';
+require_once 'Graphite/ParserSPARQLPath.php';
 
 function graphite_sort_list_cmp( $a, $b )
 {
