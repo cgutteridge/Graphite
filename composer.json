@@ -13,7 +13,8 @@
         }
     ],
     "require": {
-        "semsol/arc2": "dev-master"
+        "semsol/arc2": "dev-master",
+        "php": ">=5.3.0"
     },
     "autoload": {
         "files": ["Graphite.php"]
