@@ -506,7 +506,7 @@ rkJggg==
 			{
 				$time = $res->get("http://purl.org/NET/c4dm/event.owl#time");
 			} else {
-				$time = $res;
+				continue;
 			}
 			$timeuri = "" . $time;
 			if(array_key_exists($timeuri, $done))
@@ -539,7 +539,8 @@ rkJggg==
 			$location = "";
 			if($res->has("http://purl.org/NET/c4dm/event.owl#place"))
 			{
-				$location = $res->all("http://purl.org/NET/c4dm/event.owl#place")->label()->join(", ");
+				$location = "" . $res->all("http://purl.org/NET/c4dm/event.owl#place")->label()->join(", ");
+				$location = trim(str_replace("[NULL]", "", $location), " ,");
 			}
 			$title = str_replace("\n", "\\n", $res->label());
 			$description = "";
