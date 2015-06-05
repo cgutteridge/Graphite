@@ -506,7 +506,12 @@ rkJggg==
 			{
 				$time = $res->get("http://purl.org/NET/c4dm/event.owl#time");
 			} else {
-				continue;
+				if(($res->has("http://purl.org/NET/c4dm/timeline.owl#start")) | ($res->has("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime")))
+				{
+					$time = $res;
+				} else {
+					continue;
+				}
 			}
 			$timeuri = "" . $time;
 			if(array_key_exists($timeuri, $done))
