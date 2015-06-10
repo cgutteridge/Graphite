@@ -506,13 +506,72 @@ rkJggg==
 			{
 				$time = $res->get("http://purl.org/NET/c4dm/event.owl#time");
 			} else {
-				if(($res->has("http://purl.org/NET/c4dm/timeline.owl#start")) | ($res->has("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime")))
-				{
-					$time = $res;
-				} else {
-					continue;
-				}
+				continue;
 			}
+			$timeuri = "" . $time;
+			if(array_key_exists($timeuri, $done))
+			{
+				continue;
+			}
+			$done[$timeuri] = $timeuri;
+			$starttime = 0;
+			$endtime = 0;
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#start"))
+			{
+				$starttime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#start"));
+			}
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime"))
+			{
+				$starttime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime"));
+			}
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#end"))
+			{
+				$endtime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#end"));
+			}
+			if($time->has("http://purl.org/NET/c4dm/timeline.owl#endsAtDateTime"))
+			{
+				$endtime = strtotime($time->get("http://purl.org/NET/c4dm/timeline.owl#endsAtDateTime"));
+			}
+			if(($starttime == 0) | ($endtime == 0))
+			{
+				continue;
+			}
+			$location = "";
+			if($res->has("http://purl.org/NET/c4dm/event.owl#place"))
+			{
+				$location = "" . $res->all("http://purl.org/NET/c4dm/event.owl#place")->label()->join(", ");
+				$location = trim(str_replace("[NULL]", "", $location), " ,");
+			}
+			$title = str_replace("\n", "\\n", $res->label());
+			$description = "";
+			if($res->has("http://purl.org/dc/terms/description"))
+			{
+				$description = str_replace("\n", "\\n", $res->get("http://purl.org/dc/terms/description"));
+			}
+
+			$r .= "BEGIN:VEVENT\r\n";
+			$r .= "DTSTART:" . gmdate("Ymd", $starttime) . "T" . gmdate("His", $starttime) . "Z\r\n";
+			$r .= "DTEND:" . gmdate("Ymd", $endtime) . "T" . gmdate("His", $endtime) . "Z\r\n";
+			$r .= "UID:" . $res . "\r\n";
+			$r .= "SUMMARY:" . $title . "\r\n";
+			$r .= "DESCRIPTION:" . $description . "\r\n";
+			$r .= "LOCATION:" . $location . "\r\n";
+			$r .= "END:VEVENT\r\n";
+		}
+
+		foreach($this->allSubjects() as $res)
+		{
+			if($res->has("http://purl.org/NET/c4dm/event.owl#time"))
+			{
+				continue;
+			}
+			if(($res->has("http://purl.org/NET/c4dm/timeline.owl#start")) | ($res->has("http://purl.org/NET/c4dm/timeline.owl#beginsAtDateTime")))
+			{
+				$time = $res;
+			} else {
+				continue;
+			}
+
 			$timeuri = "" . $time;
 			if(array_key_exists($timeuri, $done))
 			{
