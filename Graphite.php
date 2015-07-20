@@ -43,6 +43,7 @@ class Graphite
 	public function __construct( $namespaces = array(), $uri = null )
 	{
 		$this->workAround4StoreBNodeBug = false;
+		$this->urlMappingFunctions = array();
 		$this->t = array( "sp" => array(), "op"=>array() );
 		foreach( $namespaces as $short=>$long )
 		{
@@ -132,6 +133,7 @@ rkJggg==
 
 	public static function __set_state($data) // As of PHP 5.1.0
 	{
+		# does not preserve url mapping functions
 		$graph = new Graphite;
 		$graph->bnodeprefix = $data['bnodeprefix'];
 		$graph->firstGraphURI = $data['firstGraphURI'];
@@ -941,6 +943,34 @@ rkJggg==
 			throw new InvalidArgumentException("Setting a namespace called '$short' is just asking for trouble. Abort.");
 		}
 		$this->ns[$short] = $long;
+	}
+
+	/**
+	 * Add a function to the end of the URI->URL mapping list
+	 * function should take a Graphite::Resource and return a URL
+	 * or null to defer.
+	 */
+	public function addURLMap( $fn )
+	{
+		array_push( $this->urlMappingFunctions, $fn );
+	}
+
+	/**
+	 * Add a function to the start of the URI->URL mapping list
+	 * function should take a Graphite::Resource and return a URL
+	 * or null to defer.
+	 */
+	public function addURLMapEarly( $fn )
+	{
+		array_unshift( $this->urlMappingFunctions, $fn );
+	}
+
+	/**
+	 * Clear the URI->URL mapping list.
+	 */
+	public function clearURLMap( $fn )
+	{
+		$this->urlMappingFunctions = array();
 	}
 
 	/**

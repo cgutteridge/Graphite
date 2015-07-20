@@ -461,7 +461,19 @@ class Graphite_Resource extends Graphite_Node
 
 		$label = $this->uri;
 		if( $this->hasLabel() ) { $label = $this->label(); }
-		return "<a title='".$this->uri."' href='".$this->uri."'>$label</a>";
+
+		return "<a href='".$this->url()."'>$label</a>";
+	}
+
+	// Return the 'best' URL for this URI. Defaults to the URI.
+	public function url()
+	{
+		foreach( $this->g->urlMappingFunctions as $fn )
+		{
+			$url = $fn($this);
+			if( isset($url) ) { return $url; }
+		}
+		return $this->uri;
 	}
 
 	public function dumpText()
